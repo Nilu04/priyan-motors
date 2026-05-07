@@ -1,4 +1,4 @@
-// server.js - Optimized for persistent data loading
+// server.js - Optimized for persistent data loading (WITHOUT DUPLICATES)
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -16,14 +16,14 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://priyan_admin:Priya
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Increased for large Base64 images
+app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static('public'));
 
 // Configure multer for memory storage
 const upload = multer({ 
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
 
 // ============= MONGODB CONNECTION =============
@@ -117,7 +117,6 @@ const authenticateToken = async (req, res, next) => {
 // ============= INITIALIZE DEFAULT DATA =============
 async function initializeData() {
   try {
-    // Create default admin if not exists
     const adminExists = await User.findOne({ username: 'admin' });
     if (!adminExists) {
       const hashedPassword = bcrypt.hashSync('admin123', 10);
@@ -125,14 +124,12 @@ async function initializeData() {
       console.log('✅ Default admin user created (username: admin, password: admin123)');
     }
     
-    // Create default logo setting if not exists
     const logoSetting = await Setting.findOne({ key: 'website_logo' });
     if (!logoSetting) {
       await Setting.create({ key: 'website_logo', value: 'https://placehold.co/400x400/1E3A8A/white?text=PM' });
       console.log('✅ Default logo setting created');
     }
     
-    // Add sample bikes if none exist
     const bikeCount = await Bike.countDocuments();
     if (bikeCount === 0) {
       const sampleBikes = [
@@ -144,7 +141,6 @@ async function initializeData() {
       console.log('✅ Sample bikes added');
     }
     
-    // Add sample sold bikes if none exist
     const soldCount = await Sold.countDocuments();
     if (soldCount === 0) {
       const sampleSold = [
@@ -273,7 +269,6 @@ app.get('/api/verify-token', authenticateToken, (req, res) => {
 app.get('/api/bikes', async (req, res) => {
   try {
     const bikes = await Bike.find().sort({ created_at: -1 });
-    // Set cache control headers
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
@@ -284,30 +279,51 @@ app.get('/api/bikes', async (req, res) => {
   }
 });
 
+// SINGLE bike POST route (with debug logging)
 app.post('/api/bikes', authenticateToken, upload.single('image'), async (req, res) => {
   try {
+    console.log('📥 Received bike data:', req.body);
+    console.log('📸 Image file:', req.file ? req.file.originalname : 'No file');
+    
     const { name, price, price_num, year, km, location, brand } = req.body;
     
+    // Validate required fields
+    const missingFields = [];
+    if (!name || name.trim() === '') missingFields.push('name');
+    if (!year || year.trim() === '') missingFields.push('year');
+    if (!km || km.trim() === '') missingFields.push('km');
+    if (!location || location.trim() === '') missingFields.push('location');
+    if (!brand || brand.trim() === '') missingFields.push('brand');
+    
+    if (missingFields.length > 0) {
+      console.error('❌ Missing required fields:', missingFields);
+      return res.status(400).json({ 
+        error: `Missing required fields: ${missingFields.join(', ')}`,
+        received: req.body 
+      });
+    }
+    
     const bikeData = {
-      name,
-      price,
-      price_num: parseInt(price_num),
-      year,
-      km,
-      location,
-      brand
+      name: name.trim(),
+      price: price || `Rs. ${parseInt(price_num || 0).toLocaleString()}`,
+      price_num: parseInt(price_num) || 0,
+      year: year.trim(),
+      km: km.trim(),
+      location: location.trim(),
+      brand: brand.trim()
     };
     
     if (req.file) {
       bikeData.image = bufferToBase64(req.file.buffer, req.file.mimetype);
-    } else if (req.body.image_url) {
+    } else if (req.body.image_url && req.body.image_url.trim() !== '') {
       bikeData.image = req.body.image_url;
     }
     
     const bike = await Bike.create(bikeData);
+    console.log('✅ Bike created successfully:', bike._id);
     res.json({ id: bike.id, message: 'Bike added successfully', bike });
   } catch (err) {
-    console.error('Error adding bike:', err);
+    console.error('❌ Error adding bike:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -352,55 +368,6 @@ app.delete('/api/bikes/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/bikes', authenticateToken, upload.single('image'), async (req, res) => {
-  try {
-    // ADD THIS DEBUG LOGGING
-    console.log('📥 Received bike data:', req.body);
-    console.log('📸 Image file:', req.file ? req.file.originalname : 'No file');
-    
-    const { name, price, price_num, year, km, location, brand } = req.body;
-    
-    // Validate required fields with better error messages
-    const missingFields = [];
-    if (!name) missingFields.push('name');
-    if (!year) missingFields.push('year');
-    if (!km) missingFields.push('km');
-    if (!location) missingFields.push('location');
-    if (!brand) missingFields.push('brand');
-    
-    if (missingFields.length > 0) {
-      console.error('❌ Missing required fields:', missingFields);
-      return res.status(400).json({ 
-        error: `Missing required fields: ${missingFields.join(', ')}`,
-        received: req.body 
-      });
-    }
-    
-    const bikeData = {
-      name,
-      price,
-      price_num: parseInt(price_num),
-      year,
-      km,
-      location,
-      brand
-    };
-    
-    if (req.file) {
-      bikeData.image = bufferToBase64(req.file.buffer, req.file.mimetype);
-    } else if (req.body.image_url) {
-      bikeData.image = req.body.image_url;
-    }
-    
-    const bike = await Bike.create(bikeData);
-    console.log('✅ Bike created successfully:', bike._id);
-    res.json({ id: bike.id, message: 'Bike added successfully', bike });
-  } catch (err) {
-    console.error('❌ Error adding bike:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // ============= SOLD BIKES ROUTES =============
 app.get('/api/sold', async (req, res) => {
   try {
@@ -417,26 +384,42 @@ app.get('/api/sold', async (req, res) => {
 
 app.post('/api/sold', authenticateToken, upload.single('image'), async (req, res) => {
   try {
+    console.log('📥 Received sold data:', req.body);
+    
     const { name, sold_price, sold_price_num, month_year, buyer } = req.body;
     
+    const missingFields = [];
+    if (!name || name.trim() === '') missingFields.push('name');
+    if (!month_year || month_year.trim() === '') missingFields.push('month_year');
+    if (!buyer || buyer.trim() === '') missingFields.push('buyer');
+    
+    if (missingFields.length > 0) {
+      console.error('❌ Missing required fields:', missingFields);
+      return res.status(400).json({ 
+        error: `Missing required fields: ${missingFields.join(', ')}`,
+        received: req.body 
+      });
+    }
+    
     const soldData = {
-      name,
-      sold_price,
-      sold_price_num: parseInt(sold_price_num),
-      month_year,
-      buyer
+      name: name.trim(),
+      sold_price: sold_price || `Rs. ${parseInt(sold_price_num || 0).toLocaleString()}`,
+      sold_price_num: parseInt(sold_price_num) || 0,
+      month_year: month_year.trim(),
+      buyer: buyer.trim()
     };
     
     if (req.file) {
       soldData.image = bufferToBase64(req.file.buffer, req.file.mimetype);
-    } else if (req.body.image_url) {
+    } else if (req.body.image_url && req.body.image_url.trim() !== '') {
       soldData.image = req.body.image_url;
     }
     
     const sold = await Sold.create(soldData);
+    console.log('✅ Sold entry created successfully:', sold._id);
     res.json({ id: sold.id, message: 'Sold entry added successfully', sold });
   } catch (err) {
-    console.error('Error adding sold entry:', err);
+    console.error('❌ Error adding sold entry:', err);
     res.status(500).json({ error: err.message });
   }
 });
