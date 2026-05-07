@@ -352,6 +352,55 @@ app.delete('/api/bikes/:id', authenticateToken, async (req, res) => {
   }
 });
 
+app.post('/api/bikes', authenticateToken, upload.single('image'), async (req, res) => {
+  try {
+    // ADD THIS DEBUG LOGGING
+    console.log('📥 Received bike data:', req.body);
+    console.log('📸 Image file:', req.file ? req.file.originalname : 'No file');
+    
+    const { name, price, price_num, year, km, location, brand } = req.body;
+    
+    // Validate required fields with better error messages
+    const missingFields = [];
+    if (!name) missingFields.push('name');
+    if (!year) missingFields.push('year');
+    if (!km) missingFields.push('km');
+    if (!location) missingFields.push('location');
+    if (!brand) missingFields.push('brand');
+    
+    if (missingFields.length > 0) {
+      console.error('❌ Missing required fields:', missingFields);
+      return res.status(400).json({ 
+        error: `Missing required fields: ${missingFields.join(', ')}`,
+        received: req.body 
+      });
+    }
+    
+    const bikeData = {
+      name,
+      price,
+      price_num: parseInt(price_num),
+      year,
+      km,
+      location,
+      brand
+    };
+    
+    if (req.file) {
+      bikeData.image = bufferToBase64(req.file.buffer, req.file.mimetype);
+    } else if (req.body.image_url) {
+      bikeData.image = req.body.image_url;
+    }
+    
+    const bike = await Bike.create(bikeData);
+    console.log('✅ Bike created successfully:', bike._id);
+    res.json({ id: bike.id, message: 'Bike added successfully', bike });
+  } catch (err) {
+    console.error('❌ Error adding bike:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ============= SOLD BIKES ROUTES =============
 app.get('/api/sold', async (req, res) => {
   try {
