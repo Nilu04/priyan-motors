@@ -1,4 +1,4 @@
-// server.js - Backend API server (FIXED VERSION)
+// server.js - Backend API server (ADDED SOLD IMAGE SUPPORT)
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -20,7 +20,7 @@ app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
 // Ensure uploads directory exists
-const uploadDirs = ['./uploads', './uploads/bikes', './uploads/logos', './uploads/profiles'];
+const uploadDirs = ['./uploads', './uploads/bikes', './uploads/logos', './uploads/profiles', './uploads/sold'];
 uploadDirs.forEach(dir => {
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
@@ -56,7 +56,7 @@ db.serialize(() => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
     
-    // Sold bikes table
+    // Sold bikes table with image support
     db.run(`CREATE TABLE IF NOT EXISTS sold (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -64,6 +64,7 @@ db.serialize(() => {
         sold_price_num INTEGER NOT NULL,
         month_year TEXT NOT NULL,
         buyer TEXT NOT NULL,
+        image TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
     
@@ -101,12 +102,12 @@ db.serialize(() => {
     db.get(`SELECT COUNT(*) as count FROM sold`, (err, row) => {
         if (row && row.count === 0) {
             const sampleSold = [
-                { name: "Honda CB Shine", sold_price: "Rs. 375,000", sold_price_num: 375000, month_year: "Feb 2025", buyer: "Mr. Ramesh" },
-                { name: "Yamaha FZ V3", sold_price: "Rs. 485,000", sold_price_num: 485000, month_year: "Mar 2025", buyer: "Mrs. Santhiya" }
+                { name: "Honda CB Shine", sold_price: "Rs. 375,000", sold_price_num: 375000, month_year: "Feb 2025", buyer: "Mr. Ramesh", image: "https://i.ibb.co/JRzmSsHs/b1.jpg" },
+                { name: "Yamaha FZ V3", sold_price: "Rs. 485,000", sold_price_num: 485000, month_year: "Mar 2025", buyer: "Mrs. Santhiya", image: "https://i.ibb.co/yF2W5xJp/b2.jpg" }
             ];
             sampleSold.forEach(sold => {
-                db.run(`INSERT INTO sold (name, sold_price, sold_price_num, month_year, buyer) VALUES (?, ?, ?, ?, ?)`,
-                    [sold.name, sold.sold_price, sold.sold_price_num, sold.month_year, sold.buyer]);
+                db.run(`INSERT INTO sold (name, sold_price, sold_price_num, month_year, buyer, image) VALUES (?, ?, ?, ?, ?, ?)`,
+                    [sold.name, sold.sold_price, sold.sold_price_num, sold.month_year, sold.buyer, sold.image]);
             });
             console.log("Sample sold entries inserted");
         }
@@ -121,6 +122,8 @@ const storage = multer.diskStorage({
             uploadPath = './uploads/profiles';
         } else if (req.url.includes('logo')) {
             uploadPath = './uploads/logos';
+        } else if (req.url.includes('sold')) {
+            uploadPath = './uploads/sold';
         }
         cb(null, uploadPath);
     },
@@ -318,7 +321,7 @@ app.delete('/api/bikes/:id', authenticateToken, (req, res) => {
     });
 });
 
-// ============= SOLD BIKES ROUTES =============
+// ============= SOLD BIKES ROUTES (with image support) =============
 app.get('/api/sold', (req, res) => {
     db.all('SELECT * FROM sold ORDER BY id DESC', [], (err, rows) => {
         if (err) {
@@ -328,14 +331,20 @@ app.get('/api/sold', (req, res) => {
     });
 });
 
-app.post('/api/sold', authenticateToken, (req, res) => {
+app.post('/api/sold', authenticateToken, upload.single('image'), (req, res) => {
     const { name, sold_price, sold_price_num, month_year, buyer } = req.body;
+    let image = req.body.image || null;
     
-    db.run(`INSERT INTO sold (name, sold_price, sold_price_num, month_year, buyer) 
-            VALUES (?, ?, ?, ?, ?)`,
-        [name, sold_price, sold_price_num, month_year, buyer],
+    if (req.file) {
+        image = `/uploads/sold/${req.file.filename}`;
+    }
+    
+    db.run(`INSERT INTO sold (name, sold_price, sold_price_num, month_year, buyer, image) 
+            VALUES (?, ?, ?, ?, ?, ?)`,
+        [name, sold_price, sold_price_num, month_year, buyer, image],
         function(err) {
             if (err) {
+                console.error('Database error:', err);
                 return res.status(500).json({ error: err.message });
             }
             res.json({ id: this.lastID, message: 'Sold entry added successfully' });
@@ -343,19 +352,36 @@ app.post('/api/sold', authenticateToken, (req, res) => {
     );
 });
 
-app.put('/api/sold/:id', authenticateToken, (req, res) => {
+app.put('/api/sold/:id', authenticateToken, upload.single('image'), (req, res) => {
     const { id } = req.params;
     const { name, sold_price, sold_price_num, month_year, buyer } = req.body;
+    let image = req.body.image;
     
-    db.run(`UPDATE sold SET name=?, sold_price=?, sold_price_num=?, month_year=?, buyer=? WHERE id=?`,
-        [name, sold_price, sold_price_num, month_year, buyer, id],
-        function(err) {
-            if (err) {
-                return res.status(500).json({ error: err.message });
+    if (req.file) {
+        image = `/uploads/sold/${req.file.filename}`;
+    }
+    
+    if (image) {
+        db.run(`UPDATE sold SET name=?, sold_price=?, sold_price_num=?, month_year=?, buyer=?, image=? WHERE id=?`,
+            [name, sold_price, sold_price_num, month_year, buyer, image, id],
+            function(err) {
+                if (err) {
+                    return res.status(500).json({ error: err.message });
+                }
+                res.json({ message: 'Sold entry updated successfully' });
             }
-            res.json({ message: 'Sold entry updated successfully' });
-        }
-    );
+        );
+    } else {
+        db.run(`UPDATE sold SET name=?, sold_price=?, sold_price_num=?, month_year=?, buyer=? WHERE id=?`,
+            [name, sold_price, sold_price_num, month_year, buyer, id],
+            function(err) {
+                if (err) {
+                    return res.status(500).json({ error: err.message });
+                }
+                res.json({ message: 'Sold entry updated successfully' });
+            }
+        );
+    }
 });
 
 app.delete('/api/sold/:id', authenticateToken, (req, res) => {
