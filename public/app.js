@@ -1,4 +1,4 @@
-// app.js - Frontend Application (UPDATED with clickable logo and sold images)
+// app.js - Frontend Application (FIXED PROFILE PICTURE)
 const API_URL = '';
 let token = localStorage.getItem('token');
 let currentUser = null;
@@ -8,9 +8,7 @@ let soldList = [];
 
 // API Helper functions
 async function apiCall(endpoint, options = {}) {
-    const headers = {
-        ...options.headers
-    };
+    const headers = { ...options.headers };
     
     if (options.body && !(options.body instanceof FormData)) {
         headers['Content-Type'] = 'application/json';
@@ -21,21 +19,16 @@ async function apiCall(endpoint, options = {}) {
     }
     
     try {
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            ...options,
-            headers
-        });
-        
+        const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
         if (response.status === 401 || response.status === 403) {
             logout();
             showToast('Session expired. Please login again.');
             return null;
         }
-        
         return response;
     } catch (error) {
         console.error('API Error:', error);
-        showToast('Network error. Please try again.');
+        showToast('Network error. Please try again.', true);
         return null;
     }
 }
@@ -187,21 +180,31 @@ function escapeHtml(str) {
     });
 }
 
-// Authentication
+// Authentication - FIXED to load profile picture on refresh
 async function checkAuth() {
     if (!token) return false;
-    const response = await apiCall('/api/verify-token');
-    if (response && response.ok) {
-        const data = await response.json();
-        const userResponse = await apiCall('/api/me');
-        if (userResponse && userResponse.ok) {
-            currentUser = await userResponse.json();
-        } else {
-            currentUser = data.user;
+    
+    try {
+        const response = await apiCall('/api/verify-token');
+        if (response && response.ok) {
+            const data = await response.json();
+            
+            // Get full user info including profile picture
+            const userResponse = await apiCall('/api/me');
+            if (userResponse && userResponse.ok) {
+                currentUser = await userResponse.json();
+                console.log('User loaded:', currentUser);
+            } else {
+                currentUser = data.user;
+            }
+            
+            updateUILoggedIn();
+            return true;
         }
-        updateUILoggedIn();
-        return true;
+    } catch (error) {
+        console.error('Auth check failed:', error);
     }
+    
     return false;
 }
 
@@ -212,10 +215,21 @@ function updateUILoggedIn() {
     document.getElementById('logoutBtn').classList.remove('hidden');
     document.getElementById('showLoginOption').classList.add('hidden');
     document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+    
+    // IMPORTANT: Update profile picture display
     if (currentUser?.profile_picture) {
-        document.getElementById('navProfilePic').src = currentUser.profile_picture;
+        const profilePicUrl = currentUser.profile_picture;
+        document.getElementById('navProfilePic').src = profilePicUrl;
         document.getElementById('navProfilePic').classList.remove('hidden');
-        document.getElementById('dropdownProfilePic').src = currentUser.profile_picture;
+        document.getElementById('dropdownProfilePic').src = profilePicUrl;
+        
+        // Hide the default user icon when profile pic exists
+        const userIcon = document.querySelector('#accountBtn .fa-user-circle');
+        if (userIcon) userIcon.style.display = 'none';
+    } else {
+        document.getElementById('navProfilePic').classList.add('hidden');
+        const userIcon = document.querySelector('#accountBtn .fa-user-circle');
+        if (userIcon) userIcon.style.display = 'inline-block';
     }
 }
 
@@ -227,6 +241,10 @@ function updateUIGuest() {
     document.getElementById('showLoginOption').classList.remove('hidden');
     document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
     document.getElementById('navProfilePic').classList.add('hidden');
+    
+    // Show default user icon
+    const userIcon = document.querySelector('#accountBtn .fa-user-circle');
+    if (userIcon) userIcon.style.display = 'inline-block';
 }
 
 async function login(username, password) {
@@ -234,14 +252,24 @@ async function login(username, password) {
         method: 'POST',
         body: JSON.stringify({ username, password })
     });
+    
     if (response && response.ok) {
         const data = await response.json();
         token = data.token;
         currentUser = data.user;
         localStorage.setItem('token', token);
+        
+        // Fetch complete user info including profile picture
+        const userResponse = await apiCall('/api/me');
+        if (userResponse && userResponse.ok) {
+            currentUser = await userResponse.json();
+        }
+        
         updateUILoggedIn();
         closeAllModals();
         showToast('Login successful!');
+        
+        // Refresh current page data
         if (currentPage === 'bikes') loadBikes();
         if (currentPage === 'sold') loadSold();
         return true;
@@ -261,7 +289,49 @@ function logout() {
     if (currentPage === 'sold') loadSold();
 }
 
-// CRUD Operations
+// Profile Picture Upload - FIXED
+document.getElementById('uploadProfilePicBtn')?.addEventListener('click', () => {
+    document.getElementById('profilePicInput').click();
+});
+
+document.getElementById('profilePicInput')?.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    showToast('Uploading profile picture...');
+    
+    const response = await apiCall('/api/upload-profile-picture', {
+        method: 'POST',
+        body: formData
+    });
+    
+    if (response && response.ok) {
+        const data = await response.json();
+        
+        // Update current user with new profile picture
+        if (currentUser) {
+            currentUser.profile_picture = data.imageUrl;
+        }
+        
+        // Update ALL profile picture displays immediately
+        updateUILoggedIn();
+        
+        showToast('Profile picture updated successfully!');
+        closeAllModals();
+        
+        // Refresh profile modal if open
+        if (document.getElementById('profileModal') && !document.getElementById('profileModal').classList.contains('hidden')) {
+            document.getElementById('profilePreview').src = data.imageUrl;
+        }
+    } else {
+        showToast('Failed to upload profile picture', true);
+    }
+});
+
+// CRUD Operations for Bikes and Sold (keep your existing functions)
 window.editBike = (id) => {
     const bike = bikes.find(b => b.id === id);
     if (bike) {
@@ -374,7 +444,7 @@ document.getElementById('saveBikeBtn')?.addEventListener('click', async () => {
     formData.append('km', km);
     formData.append('location', location);
     formData.append('brand', brand);
-    if (imageUrl) formData.append('image', imageUrl);
+    if (imageUrl) formData.append('image_url', imageUrl);
     if (imageFile) formData.append('image', imageFile);
     
     const url = id ? `/api/bikes/${id}` : '/api/bikes';
@@ -414,7 +484,7 @@ document.getElementById('saveSoldBtn')?.addEventListener('click', async () => {
     formData.append('sold_price_num', priceNum);
     formData.append('month_year', monthYear);
     formData.append('buyer', buyer);
-    if (imageUrl) formData.append('image', imageUrl);
+    if (imageUrl) formData.append('image_url', imageUrl);
     if (imageFile) formData.append('image', imageFile);
     
     const url = id ? `/api/sold/${id}` : '/api/sold';
@@ -437,7 +507,20 @@ document.getElementById('saveSoldBtn')?.addEventListener('click', async () => {
     }
 });
 
-// Sold image preview
+// Image preview handlers
+document.getElementById('bikeImageUpload')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('bikeImagePreview').src = ev.target.result;
+            document.getElementById('bikeImagePreview').classList.remove('hidden');
+            document.getElementById('bikeImageUrl').value = '';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
 document.getElementById('soldImageUpload')?.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -451,50 +534,16 @@ document.getElementById('soldImageUpload')?.addEventListener('change', (e) => {
     }
 });
 
-// Profile Picture Upload
-document.getElementById('uploadProfilePicBtn')?.addEventListener('click', () => {
-    document.getElementById('profilePicInput').click();
-});
-
-document.getElementById('profilePicInput')?.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const formData = new FormData();
-    formData.append('image', file);
-    
-    const response = await apiCall('/api/upload-profile-picture', {
-        method: 'POST',
-        body: formData
+// Modal close functions
+function closeAllModals() {
+    const modals = ['loginModal', 'profileModal', 'settingsModal', 'changePasswordModal', 'changeUsernameModal', 'createUserModal', 'editLogoModal', 'editBikeModal', 'editSoldModal'];
+    modals.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
     });
-    if (response && response.ok) {
-        const data = await response.json();
-        if (currentUser) currentUser.profile_picture = data.imageUrl;
-        updateUILoggedIn();
-        showToast('Profile picture updated!');
-        closeAllModals();
-    } else {
-        showToast('Failed to upload profile picture', true);
-    }
-});
+}
 
-// ============= CLICKABLE LOGO FEATURE =============
-// Make logo clickable to change website logo
-document.getElementById('clickableLogo')?.addEventListener('click', () => {
-    if (token) {
-        // If logged in, open logo update modal
-        const currentLogo = document.getElementById('siteLogo').src;
-        document.getElementById('logoPreview').src = currentLogo;
-        document.getElementById('logoUrlInput').value = currentLogo;
-        document.getElementById('editLogoModal').classList.remove('hidden');
-    } else {
-        // If guest, show login prompt
-        showToast('Please login as admin to change logo', true);
-        document.getElementById('loginModal').classList.remove('hidden');
-    }
-});
-
-// Event Listeners for Modals
+// Event listeners for modals
 document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
     const username = document.getElementById('loginUsername').value;
     const password = document.getElementById('loginPassword').value;
@@ -521,9 +570,6 @@ document.getElementById('profileMenuItem')?.addEventListener('click', async (e) 
         document.getElementById('profileUsername').innerText = currentUser?.username || 'Admin';
         document.getElementById('profileRole').innerText = 'Administrator';
         document.getElementById('profilePreview').src = currentUser?.profile_picture || '';
-    } else {
-        document.getElementById('profileUsername').innerText = 'Guest';
-        document.getElementById('profileRole').innerText = 'Guest User';
     }
     document.getElementById('profileModal').classList.remove('hidden');
 });
@@ -678,29 +724,20 @@ document.getElementById('logoUploadInput')?.addEventListener('change', (e) => {
     }
 });
 
-// Bike image upload preview
-document.getElementById('bikeImageUpload')?.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            document.getElementById('bikeImagePreview').src = ev.target.result;
-            document.getElementById('bikeImagePreview').classList.remove('hidden');
-            document.getElementById('bikeImageUrl').value = '';
-        };
-        reader.readAsDataURL(file);
+// Clickable logo
+document.getElementById('clickableLogo')?.addEventListener('click', () => {
+    if (token) {
+        const currentLogo = document.getElementById('siteLogo').src;
+        document.getElementById('logoPreview').src = currentLogo;
+        document.getElementById('logoUrlInput').value = currentLogo;
+        document.getElementById('editLogoModal').classList.remove('hidden');
+    } else {
+        showToast('Please login as admin to change logo', true);
+        document.getElementById('loginModal').classList.remove('hidden');
     }
 });
 
-// Close modals
-function closeAllModals() {
-    const modals = ['loginModal', 'profileModal', 'settingsModal', 'changePasswordModal', 'changeUsernameModal', 'createUserModal', 'editLogoModal', 'editBikeModal', 'editSoldModal'];
-    modals.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.add('hidden');
-    });
-}
-
+// Close modal buttons
 document.querySelectorAll('[id$="ModalBtn"], [id*="close"]').forEach(btn => {
     if (btn.id && (btn.id.includes('close') || btn.id.includes('Close'))) {
         btn.addEventListener('click', closeAllModals);
