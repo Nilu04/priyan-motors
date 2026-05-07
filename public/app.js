@@ -150,19 +150,46 @@ window.addEventListener('beforeunload', () => {
 });
 
 // Update all save handlers to force refresh after save
-// Replace your existing saveBikeBtn handler with this
+// Updated saveBikeBtn handler - FIXED version
 document.getElementById('saveBikeBtn')?.addEventListener('click', async () => {
+    console.log('📝 Saving bike...');
+    
     const id = document.getElementById('editBikeId').value;
     const name = document.getElementById('bikeName').value;
     const priceRaw = document.getElementById('bikePrice').value;
-    const priceNum = parseInt(priceRaw.replace(/[^0-9]/g, '')) || 0;
-    const price = `Rs. ${priceNum.toLocaleString()}`;
     const year = document.getElementById('bikeYear').value;
     const km = document.getElementById('bikeKm').value;
     const location = document.getElementById('bikeLocation').value;
     const brand = document.getElementById('bikeBrand').value;
     const imageUrl = document.getElementById('bikeImageUrl').value;
     const imageFile = document.getElementById('bikeImageUpload').files[0];
+    
+    // Validate required fields
+    if (!name) {
+        showToast('Bike name is required!', true);
+        return;
+    }
+    if (!year) {
+        showToast('Year is required!', true);
+        return;
+    }
+    if (!km) {
+        showToast('Kilometers is required!', true);
+        return;
+    }
+    if (!location) {
+        showToast('Location is required!', true);
+        return;
+    }
+    if (!brand) {
+        showToast('Brand is required!', true);
+        return;
+    }
+    
+    const priceNum = parseInt(priceRaw.replace(/[^0-9]/g, '')) || 0;
+    const price = `Rs. ${priceNum.toLocaleString()}`;
+    
+    console.log('Bike data:', { name, price, priceNum, year, km, location, brand });
     
     const formData = new FormData();
     formData.append('name', name);
@@ -172,8 +199,13 @@ document.getElementById('saveBikeBtn')?.addEventListener('click', async () => {
     formData.append('km', km);
     formData.append('location', location);
     formData.append('brand', brand);
-    if (imageUrl) formData.append('image_url', imageUrl);
-    if (imageFile) formData.append('image', imageFile);
+    
+    if (imageUrl) {
+        formData.append('image_url', imageUrl);
+    }
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
     
     const url = id ? `/api/bikes/${id}` : '/api/bikes';
     const method = id ? 'PUT' : 'POST';
@@ -181,32 +213,63 @@ document.getElementById('saveBikeBtn')?.addEventListener('click', async () => {
     try {
         const response = await apiCall(url, { method, body: formData });
         if (response && response.ok) {
+            const result = await response.json();
+            console.log('Save result:', result);
             showToast(id ? 'Bike updated successfully!' : 'Bike added successfully!');
             closeAllModals();
-            // Force refresh all data after save
-            await forceRefreshAllData();
+            // Clear form
+            document.getElementById('bikeName').value = '';
+            document.getElementById('bikePrice').value = '';
+            document.getElementById('bikeYear').value = '';
+            document.getElementById('bikeKm').value = '';
+            document.getElementById('bikeLocation').value = '';
+            document.getElementById('bikeBrand').value = '';
+            document.getElementById('bikeImageUrl').value = '';
             document.getElementById('bikeImageUpload').value = '';
+            document.getElementById('bikeImagePreview').classList.add('hidden');
+            // Refresh bikes list
+            await loadBikes();
         } else if (response) {
             const error = await response.json();
+            console.error('Server error:', error);
             showToast(error.error || 'Failed to save bike', true);
         }
     } catch (error) {
         console.error('Save error:', error);
-        showToast('Error saving bike. Please try again.', true);
+        showToast('Error saving bike. Please check console.', true);
     }
 });
 
-// Update sold save handler similarly
+// Updated saveSoldBtn handler - FIXED version
 document.getElementById('saveSoldBtn')?.addEventListener('click', async () => {
+    console.log('📝 Saving sold entry...');
+    
     const id = document.getElementById('editSoldId').value;
     const name = document.getElementById('soldName').value;
     const priceRaw = document.getElementById('soldPrice').value;
-    const priceNum = parseInt(priceRaw.replace(/[^0-9]/g, '')) || 0;
-    const soldPrice = `Rs. ${priceNum.toLocaleString()}`;
     const monthYear = document.getElementById('soldMonthYear').value;
     const buyer = document.getElementById('soldBuyer').value;
     const imageUrl = document.getElementById('soldImageUrl').value;
     const imageFile = document.getElementById('soldImageUpload').files[0];
+    
+    // Validate required fields
+    if (!name) {
+        showToast('Bike name is required!', true);
+        return;
+    }
+    if (!monthYear) {
+        showToast('Month/Year is required!', true);
+        return;
+    }
+    if (!buyer) {
+        showToast('Buyer name is required!', true);
+        return;
+    }
+    
+    const priceNum = parseInt(priceRaw.replace(/[^0-9]/g, '')) || 0;
+    const soldPrice = `Rs. ${priceNum.toLocaleString()}`;
+    
+    console.log('Sold data:', { name, soldPrice, priceNum, monthYear, buyer });
     
     const formData = new FormData();
     formData.append('name', name);
@@ -214,8 +277,13 @@ document.getElementById('saveSoldBtn')?.addEventListener('click', async () => {
     formData.append('sold_price_num', priceNum);
     formData.append('month_year', monthYear);
     formData.append('buyer', buyer);
-    if (imageUrl) formData.append('image_url', imageUrl);
-    if (imageFile) formData.append('image', imageFile);
+    
+    if (imageUrl) {
+        formData.append('image_url', imageUrl);
+    }
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
     
     const url = id ? `/api/sold/${id}` : '/api/sold';
     const method = id ? 'PUT' : 'POST';
@@ -223,17 +291,28 @@ document.getElementById('saveSoldBtn')?.addEventListener('click', async () => {
     try {
         const response = await apiCall(url, { method, body: formData });
         if (response && response.ok) {
+            const result = await response.json();
+            console.log('Save result:', result);
             showToast(id ? 'Sold entry updated!' : 'Sold entry added!');
             closeAllModals();
-            await forceRefreshAllData();
+            // Clear form
+            document.getElementById('soldName').value = '';
+            document.getElementById('soldPrice').value = '';
+            document.getElementById('soldMonthYear').value = '';
+            document.getElementById('soldBuyer').value = '';
+            document.getElementById('soldImageUrl').value = '';
             document.getElementById('soldImageUpload').value = '';
+            document.getElementById('soldImagePreview').classList.add('hidden');
+            // Refresh sold list
+            await loadSold();
         } else if (response) {
             const error = await response.json();
+            console.error('Server error:', error);
             showToast(error.error || 'Failed to save sold entry', true);
         }
     } catch (error) {
         console.error('Save error:', error);
-        showToast('Error saving sold entry. Please try again.', true);
+        showToast('Error saving sold entry. Please check console.', true);
     }
 });
 
