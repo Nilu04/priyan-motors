@@ -1,4 +1,4 @@
-// app.js - Frontend Application (FIXED VERSION)
+// app.js - Frontend Application (UPDATED with clickable logo and sold images)
 const API_URL = '';
 let token = localStorage.getItem('token');
 let currentUser = null;
@@ -12,7 +12,6 @@ async function apiCall(endpoint, options = {}) {
         ...options.headers
     };
     
-    // Don't set Content-Type for FormData - browser will set it with boundary
     if (options.body && !(options.body instanceof FormData)) {
         headers['Content-Type'] = 'application/json';
     }
@@ -75,7 +74,7 @@ const templates = {
     
     sold: () => `
         <div class="container mx-auto px-4 py-8">
-            <div class="flex justify-between items-center mb-6 flex-wrap gap-3"><div><h1 class="text-3xl md:text-4xl font-black">✅ Recently Sold Bikes</h1><p class="text-gray-500">Sold archive with buyer details</p></div>${token ? `<button onclick="openAddSoldModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold transition"><i class="fas fa-plus"></i> Add Sold Entry</button>` : ''}</div>
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-3"><div><h1 class="text-3xl md:text-4xl font-black">✅ Recently Sold Bikes</h1><p class="text-gray-500">Sold archive with buyer details and photos</p></div>${token ? `<button onclick="openAddSoldModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold transition"><i class="fas fa-plus"></i> Add Sold Entry</button>` : ''}</div>
             <div id="soldGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </div>
     `,
@@ -168,10 +167,12 @@ function renderSold() {
         return;
     }
     grid.innerHTML = soldList.map(s => `
-        <div class="bg-white rounded-2xl shadow-md sold-card p-5 border-l-8 border-green-500 hover:shadow-lg transition">
-            <h3 class="text-xl font-bold">${escapeHtml(s.name)}</h3><p class="font-bold text-green-700 text-lg">${s.sold_price}</p>
+        <div class="bg-white rounded-2xl overflow-hidden shadow-md sold-card border hover:shadow-lg transition">
+            <img src="${s.image || 'https://placehold.co/600x400/22C55E/white?text=Sold'}" class="sold-img w-full h-48 object-cover" onerror="this.src='https://placehold.co/600x400/22C55E/white?text=Sold'">
+            <div class="p-4"><h3 class="text-xl font-bold">${escapeHtml(s.name)}</h3><p class="font-bold text-green-700 text-lg">${s.sold_price}</p>
             <p class="text-sm text-gray-600 mt-1"><i class="far fa-calendar-alt"></i> ${s.month_year} · Buyer: ${escapeHtml(s.buyer)}</p>
             ${token ? `<div class="flex gap-3 mt-4"><button onclick="editSold(${s.id})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-xs transition"><i class="fas fa-edit"></i> Edit</button><button onclick="deleteSold(${s.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs transition"><i class="fas fa-trash"></i> Delete</button></div>` : `<div class="mt-3 text-gray-500 text-xs"><i class="fas fa-check-circle text-green-500"></i> Sold by Mr. Priyan Motors</div>`}
+            </div>
         </div>
     `).join('');
 }
@@ -192,7 +193,6 @@ async function checkAuth() {
     const response = await apiCall('/api/verify-token');
     if (response && response.ok) {
         const data = await response.json();
-        // Get full user info
         const userResponse = await apiCall('/api/me');
         if (userResponse && userResponse.ok) {
             currentUser = await userResponse.json();
@@ -303,6 +303,14 @@ window.editSold = (id) => {
         document.getElementById('soldPrice').value = sold.sold_price.replace('Rs.', '').replace(/,/g, '').trim();
         document.getElementById('soldMonthYear').value = sold.month_year;
         document.getElementById('soldBuyer').value = sold.buyer;
+        document.getElementById('soldImageUrl').value = sold.image || '';
+        const preview = document.getElementById('soldImagePreview');
+        if (sold.image) {
+            preview.src = sold.image;
+            preview.classList.remove('hidden');
+        } else {
+            preview.classList.add('hidden');
+        }
         document.getElementById('editSoldModal').classList.remove('hidden');
     }
 };
@@ -338,6 +346,9 @@ window.openAddSoldModal = () => {
     document.getElementById('soldPrice').value = '';
     document.getElementById('soldMonthYear').value = '';
     document.getElementById('soldBuyer').value = '';
+    document.getElementById('soldImageUrl').value = '';
+    document.getElementById('soldImageUpload').value = '';
+    document.getElementById('soldImagePreview').classList.add('hidden');
     document.getElementById('editSoldModal').classList.remove('hidden');
 };
 
@@ -375,7 +386,6 @@ document.getElementById('saveBikeBtn')?.addEventListener('click', async () => {
             showToast(id ? 'Bike updated successfully!' : 'Bike added successfully!');
             closeAllModals();
             loadBikes();
-            // Clear form
             document.getElementById('bikeImageUpload').value = '';
         } else if (response) {
             const error = await response.json();
@@ -395,16 +405,49 @@ document.getElementById('saveSoldBtn')?.addEventListener('click', async () => {
     const soldPrice = `Rs. ${priceNum.toLocaleString()}`;
     const monthYear = document.getElementById('soldMonthYear').value;
     const buyer = document.getElementById('soldBuyer').value;
+    const imageUrl = document.getElementById('soldImageUrl').value;
+    const imageFile = document.getElementById('soldImageUpload').files[0];
     
-    const data = { name, sold_price: soldPrice, sold_price_num: priceNum, month_year: monthYear, buyer };
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('sold_price', soldPrice);
+    formData.append('sold_price_num', priceNum);
+    formData.append('month_year', monthYear);
+    formData.append('buyer', buyer);
+    if (imageUrl) formData.append('image', imageUrl);
+    if (imageFile) formData.append('image', imageFile);
+    
     const url = id ? `/api/sold/${id}` : '/api/sold';
     const method = id ? 'PUT' : 'POST';
     
-    const response = await apiCall(url, { method, body: JSON.stringify(data) });
-    if (response && response.ok) {
-        showToast(id ? 'Sold entry updated' : 'Sold entry added');
-        closeAllModals();
-        loadSold();
+    try {
+        const response = await apiCall(url, { method, body: formData });
+        if (response && response.ok) {
+            showToast(id ? 'Sold entry updated!' : 'Sold entry added!');
+            closeAllModals();
+            loadSold();
+            document.getElementById('soldImageUpload').value = '';
+        } else if (response) {
+            const error = await response.json();
+            showToast(error.error || 'Failed to save sold entry', true);
+        }
+    } catch (error) {
+        console.error('Save error:', error);
+        showToast('Error saving sold entry. Please try again.', true);
+    }
+});
+
+// Sold image preview
+document.getElementById('soldImageUpload')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('soldImagePreview').src = ev.target.result;
+            document.getElementById('soldImagePreview').classList.remove('hidden');
+            document.getElementById('soldImageUrl').value = '';
+        };
+        reader.readAsDataURL(file);
     }
 });
 
@@ -435,6 +478,22 @@ document.getElementById('profilePicInput')?.addEventListener('change', async (e)
     }
 });
 
+// ============= CLICKABLE LOGO FEATURE =============
+// Make logo clickable to change website logo
+document.getElementById('clickableLogo')?.addEventListener('click', () => {
+    if (token) {
+        // If logged in, open logo update modal
+        const currentLogo = document.getElementById('siteLogo').src;
+        document.getElementById('logoPreview').src = currentLogo;
+        document.getElementById('logoUrlInput').value = currentLogo;
+        document.getElementById('editLogoModal').classList.remove('hidden');
+    } else {
+        // If guest, show login prompt
+        showToast('Please login as admin to change logo', true);
+        document.getElementById('loginModal').classList.remove('hidden');
+    }
+});
+
 // Event Listeners for Modals
 document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
     const username = document.getElementById('loginUsername').value;
@@ -455,7 +514,6 @@ document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
 document.getElementById('profileMenuItem')?.addEventListener('click', async (e) => {
     e.preventDefault();
     if (token && currentUser) {
-        // Refresh user info
         const response = await apiCall('/api/me');
         if (response && response.ok) {
             currentUser = await response.json();
