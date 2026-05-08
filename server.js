@@ -1,4 +1,4 @@
-// server.js - Complete with Reply to Feedback
+// server.js - Complete Optimized Backend
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -16,14 +16,14 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://priyan_admin:Priya
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static('public'));
 
 // Configure multer for memory storage
 const upload = multer({ 
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
 // ============= MONGODB CONNECTION =============
@@ -66,31 +66,6 @@ const soldSchema = new mongoose.Schema({
   created_at: { type: Date, default: Date.now }
 });
 
-const commentSchema = new mongoose.Schema({
-  bikeId: { type: String, required: true },
-  text: { type: String, required: true },
-  user: { type: String, default: 'Guest' },
-  date: { type: String, default: () => new Date().toLocaleString() },
-  replies: [{
-    text: String,
-    user: String,
-    date: String
-  }]
-});
-
-const feedbackSchema = new mongoose.Schema({
-  soldId: { type: String, required: true },
-  rating: { type: Number, required: true, min: 1, max: 5 },
-  comment: { type: String, required: true },
-  user: { type: String, default: 'Customer' },
-  date: { type: String, default: () => new Date().toLocaleString() },
-  replies: [{
-    text: String,
-    user: String,
-    date: String
-  }]
-});
-
 const settingSchema = new mongoose.Schema({
   key: { type: String, unique: true, required: true },
   value: { type: String, required: true },
@@ -100,8 +75,6 @@ const settingSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 const Bike = mongoose.model('Bike', bikeSchema);
 const Sold = mongoose.model('Sold', soldSchema);
-const Comment = mongoose.model('Comment', commentSchema);
-const Feedback = mongoose.model('Feedback', feedbackSchema);
 const Setting = mongoose.model('Setting', settingSchema);
 
 // Helper: Convert buffer to Base64
@@ -144,16 +117,6 @@ async function initializeData() {
     const logoSetting = await Setting.findOne({ key: 'website_logo' });
     if (!logoSetting) {
       await Setting.create({ key: 'website_logo', value: 'https://placehold.co/400x400/1E3A8A/white?text=PM' });
-    }
-    
-    const whatsappSetting = await Setting.findOne({ key: 'whatsapp_group' });
-    if (!whatsappSetting) {
-      await Setting.create({ key: 'whatsapp_group', value: 'https://chat.whatsapp.com/yourinvitecode' });
-    }
-    
-    const facebookSetting = await Setting.findOne({ key: 'facebook_page' });
-    if (!facebookSetting) {
-      await Setting.create({ key: 'facebook_page', value: 'https://facebook.com/yourpage' });
     }
     
     const bikeCount = await Bike.countDocuments();
@@ -365,96 +328,6 @@ app.delete('/api/sold/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// ============= COMMENTS ROUTES =============
-app.get('/api/comments/:bikeId', async (req, res) => {
-  try {
-    const comments = await Comment.find({ bikeId: req.params.bikeId }).sort({ _id: -1 });
-    res.json(comments);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/comments', async (req, res) => {
-  try {
-    const { bikeId, text, user } = req.body;
-    const comment = await Comment.create({ bikeId, text, user: user || 'Guest' });
-    res.json(comment);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/comments/:commentId/reply', async (req, res) => {
-  try {
-    const { commentId } = req.params;
-    const { text, user } = req.body;
-    const comment = await Comment.findById(commentId);
-    if (!comment) {
-      return res.status(404).json({ error: 'Comment not found' });
-    }
-    comment.replies.push({ text, user: user || 'Admin', date: new Date().toLocaleString() });
-    await comment.save();
-    res.json(comment);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.delete('/api/comments/:commentId', authenticateToken, async (req, res) => {
-  try {
-    await Comment.findByIdAndDelete(req.params.commentId);
-    res.json({ message: 'Comment deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ============= FEEDBACK ROUTES (with reply) =============
-app.get('/api/feedbacks/:soldId', async (req, res) => {
-  try {
-    const feedbacks = await Feedback.find({ soldId: req.params.soldId }).sort({ _id: -1 });
-    res.json(feedbacks);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/feedbacks', async (req, res) => {
-  try {
-    const { soldId, rating, comment, user } = req.body;
-    const feedback = await Feedback.create({ soldId, rating, comment, user: user || 'Customer' });
-    res.json(feedback);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/feedbacks/:feedbackId/reply', async (req, res) => {
-  try {
-    const { feedbackId } = req.params;
-    const { text, user } = req.body;
-    const feedback = await Feedback.findById(feedbackId);
-    if (!feedback) {
-      return res.status(404).json({ error: 'Feedback not found' });
-    }
-    feedback.replies.push({ text, user: user || 'Admin', date: new Date().toLocaleString() });
-    await feedback.save();
-    res.json(feedback);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.delete('/api/feedbacks/:feedbackId', authenticateToken, async (req, res) => {
-  try {
-    await Feedback.findByIdAndDelete(req.params.feedbackId);
-    res.json({ message: 'Feedback deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // ============= SETTINGS ROUTES =============
 app.get('/api/settings/:key', async (req, res) => {
   const setting = await Setting.findOne({ key: req.params.key });
@@ -475,35 +348,6 @@ app.post('/api/settings/logo', authenticateToken, upload.single('logo'), async (
   res.json({ logoUrl });
 });
 
-app.post('/api/settings/social', authenticateToken, async (req, res) => {
-  const { whatsapp_group, facebook_page } = req.body;
-  
-  if (whatsapp_group) {
-    await Setting.findOneAndUpdate(
-      { key: 'whatsapp_group' },
-      { key: 'whatsapp_group', value: whatsapp_group },
-      { upsert: true }
-    );
-  }
-  if (facebook_page) {
-    await Setting.findOneAndUpdate(
-      { key: 'facebook_page' },
-      { key: 'facebook_page', value: facebook_page },
-      { upsert: true }
-    );
-  }
-  res.json({ message: 'Social links updated' });
-});
-
-app.get('/api/settings/social', async (req, res) => {
-  const whatsapp = await Setting.findOne({ key: 'whatsapp_group' });
-  const facebook = await Setting.findOne({ key: 'facebook_page' });
-  res.json({ 
-    whatsapp_group: whatsapp ? whatsapp.value : 'https://chat.whatsapp.com/yourinvitecode',
-    facebook_page: facebook ? facebook.value : 'https://facebook.com/yourpage'
-  });
-});
-
 app.get('/api/settings/logo', async (req, res) => {
   const setting = await Setting.findOne({ key: 'website_logo' });
   res.json({ logoUrl: setting ? setting.value : 'https://placehold.co/400x400/1E3A8A/white?text=PM' });
@@ -514,6 +358,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Start server
 initializeData().then(() => {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
