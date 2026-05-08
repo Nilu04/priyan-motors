@@ -15,14 +15,17 @@
         .hero-gradient { background: linear-gradient(125deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.65) 100%), url('https://images.unsplash.com/photo-1558981403-c5f9899a28bc?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'); background-size: cover; background-position: center 35%; }
         .active-page { color: #00BFFF; border-bottom: 3px solid #00BFFF; font-weight: 700; }
         .modal-overlay { background: rgba(0,0,0,0.75); backdrop-filter: blur(5px); }
-        .bike-img { aspect-ratio: 4/3; width: 100%; height: auto; max-height: 200px; object-fit: cover; }
+        /* Full image display for bikes and sold */
+        .bike-img, .sold-img { width: 100%; height: 250px; object-fit: cover; border-radius: 12px 12px 0 0; }
         .filter-chip.active-filter { background-color: #00BFFF; color: white; border-color: #00BFFF; }
-        @media (max-width: 640px) { .hero-gradient { min-height: 70vh; } }
+        @media (max-width: 640px) { .hero-gradient { min-height: 70vh; } .bike-img, .sold-img { height: 180px; } }
         .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 50px; z-index: 10000; animation: fadeInOut 3s ease; }
         @keyframes fadeInOut { 0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
         .logo-clickable { cursor: pointer; transition: transform 0.2s, opacity 0.2s; }
         .logo-clickable:hover { transform: scale(1.05); opacity: 0.9; }
         button { cursor: pointer; }
+        .bike-card, .sold-card { transition: transform 0.2s, box-shadow 0.2s; border-radius: 12px; overflow: hidden; }
+        .bike-card:hover, .sold-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
@@ -32,7 +35,7 @@
     <div class="container mx-auto px-3 md:px-6">
         <div class="flex flex-wrap items-center justify-between py-2 md:py-3">
             <div class="flex items-center space-x-2 md:space-x-3 logo-clickable" id="clickableLogo">
-                <img id="siteLogo" src="https://placehold.co/400x400/1E3A8A/white?text=PM" alt="Logo" class="w-11 h-11 md:w-14 md:h-14 rounded-full border-2 border-gray-300 shadow-sm object-cover">
+                <img id="siteLogo" src="logo.png" alt="Logo" class="w-11 h-11 md:w-14 md:h-14 rounded-full border-2 border-gray-300 shadow-sm object-cover">
                 <h1 class="text-lg md:text-2xl font-black tracking-tight">MR. PRIYAN <span class="text-[#4682B4]">MOTORS</span></h1>
             </div>
             
@@ -60,7 +63,6 @@
                                 <p class="text-xs text-gray-400" id="dropdownUserRole">View Only Mode</p>
                             </div>
                         </div>
-                        <a href="#" id="profileMenuItem" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50"><i class="fas fa-id-card w-5"></i> Profile</a>
                         <a href="#" id="settingsMenuItem" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50"><i class="fas fa-sliders-h w-5"></i> Settings</a>
                         <a href="#" id="changePasswordMenuItem" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50"><i class="fas fa-key w-5"></i> Change Password</a>
                         <a href="#" id="changeUsernameMenuItem" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50"><i class="fas fa-user-edit w-5"></i> Change Username</a>
@@ -104,21 +106,6 @@
         <input type="password" id="loginPassword" placeholder="Password" class="w-full border border-gray-300 rounded-xl px-4 py-3 mb-4">
         <button id="doLoginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl">Login as Admin</button>
         <button id="closeLoginModalBtn" class="w-full mt-3 text-gray-500 text-sm py-2">Cancel</button>
-    </div>
-</div>
-
-<!-- Profile Modal -->
-<div id="profileModal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay p-4">
-    <div class="bg-white rounded-2xl w-full max-w-md p-6">
-        <h3 class="text-xl font-bold mb-4">My Profile</h3>
-        <div class="text-center mb-4">
-            <img id="profilePreview" src="" class="w-24 h-24 rounded-full object-cover mx-auto border-4 border-blue-200">
-            <button id="uploadProfilePicBtn" class="mt-2 text-sm text-blue-600 hover:text-blue-800 transition">Change Profile Picture</button>
-            <input type="file" id="profilePicInput" accept="image/*" class="hidden">
-        </div>
-        <p><strong>Username:</strong> <span id="profileUsername"></span></p>
-        <p><strong>Role:</strong> <span id="profileRole"></span></p>
-        <button id="closeProfileModalBtn" class="w-full mt-4 bg-gray-300 hover:bg-gray-400 py-2 rounded-lg transition">Close</button>
     </div>
 </div>
 
