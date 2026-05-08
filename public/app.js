@@ -1,4 +1,4 @@
-// app.js - Complete with All New Features
+// app.js - Complete with Fixed Close Buttons, Comments Persistence, Feedback System
 const API_URL = '';
 let token = localStorage.getItem('token');
 let currentUser = null;
@@ -7,8 +7,9 @@ let bikes = [];
 let soldList = [];
 let socialLinks = { whatsapp_group: '', facebook_page: '' };
 let comments = {};
+let feedbacks = {};
 
-// Load comments from localStorage
+// Load comments and feedbacks from localStorage
 function loadComments() {
     const saved = localStorage.getItem('bikeComments');
     if (saved) {
@@ -20,18 +21,29 @@ function saveComments() {
     localStorage.setItem('bikeComments', JSON.stringify(comments));
 }
 
+function loadFeedbacks() {
+    const saved = localStorage.getItem('soldFeedbacks');
+    if (saved) {
+        feedbacks = JSON.parse(saved);
+    }
+}
+
+function saveFeedbacks() {
+    localStorage.setItem('soldFeedbacks', JSON.stringify(feedbacks));
+}
+
 function addComment(bikeId, commentText, userName) {
     if (!commentText.trim()) return;
     if (!comments[bikeId]) comments[bikeId] = [];
     comments[bikeId].push({
         id: Date.now(),
         text: commentText,
-        user: userName || 'Guest',
+        user: userName,
         date: new Date().toLocaleString(),
         replies: []
     });
     saveComments();
-    showBikeDetails(bikeId); // Refresh modal
+    showBikeDetails(bikeId);
 }
 
 function addReply(bikeId, commentId, replyText, userName) {
@@ -42,12 +54,32 @@ function addReply(bikeId, commentId, replyText, userName) {
         comment.replies.push({
             id: Date.now(),
             text: replyText,
-            user: userName || 'Guest',
+            user: userName,
             date: new Date().toLocaleString()
         });
         saveComments();
         showBikeDetails(bikeId);
     }
+}
+
+function deleteComment(bikeId, commentId) {
+    if (!token) return;
+    comments[bikeId] = comments[bikeId].filter(c => c.id !== commentId);
+    saveComments();
+    showBikeDetails(bikeId);
+}
+
+function addFeedback(soldId, rating, comment, userName) {
+    if (!feedbacks[soldId]) feedbacks[soldId] = [];
+    feedbacks[soldId].push({
+        id: Date.now(),
+        rating: rating,
+        comment: comment,
+        user: userName,
+        date: new Date().toLocaleString()
+    });
+    saveFeedbacks();
+    showSoldDetails(soldId);
 }
 
 // ============= HELPER FUNCTIONS =============
@@ -74,7 +106,10 @@ function closeAllModals() {
     const modals = ['loginModal', 'settingsModal', 'changePasswordModal', 'changeUsernameModal', 'editBikeModal', 'editSoldModal', 'editLogoModal', 'socialLinksModal', 'bikeDetailsModal', 'soldDetailsModal', 'imagePreviewModal'];
     modals.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.classList.add('hidden');
+        if (el) {
+            el.classList.add('hidden');
+            el.style.display = 'none';
+        }
     });
 }
 
@@ -162,7 +197,6 @@ async function markAsSold(bikeId) {
     });
     
     if (response && response.ok) {
-        // Delete the bike from available bikes
         await apiCall(`/api/bikes/${bikeId}`, { method: 'DELETE' });
         showToast('Bike marked as sold and moved to sold page!');
         loadBikes();
@@ -187,7 +221,10 @@ window.showBikeDetails = function(bikeId) {
                     <span class="font-semibold text-blue-600">${escapeHtml(comment.user)}</span>
                     <span class="text-xs text-gray-400 ml-2">${comment.date}</span>
                 </div>
-                <button onclick="showReplyForm('${bikeId}', ${comment.id})" class="text-xs text-blue-500 hover:text-blue-700">Reply</button>
+                <div>
+                    <button onclick="showReplyForm('${bikeId}', ${comment.id})" class="text-xs text-blue-500 hover:text-blue-700 mr-2">Reply</button>
+                    ${token ? `<button onclick="deleteComment('${bikeId}', ${comment.id})" class="text-xs text-red-500 hover:text-red-700">Delete</button>` : ''}
+                </div>
             </div>
             <p class="text-gray-700 mt-1">${escapeHtml(comment.text)}</p>
             <div id="replies-${comment.id}" class="ml-4 mt-2">
@@ -211,7 +248,7 @@ window.showBikeDetails = function(bikeId) {
         <div class="bg-white rounded-2xl w-full max-w-3xl mx-auto p-6 max-h-[85vh] overflow-y-auto">
             <div class="flex justify-between items-start mb-4">
                 <h2 class="text-2xl font-black text-blue-600">${escapeHtml(bike.name)}</h2>
-                <button onclick="closeAllModals()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                <button onclick="closeAllModals()" class="close-modal-btn text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
             </div>
             <div class="relative">
                 <img src="${bike.image || 'https://placehold.co/600x400/1E3A8A/white?text=Bike'}" class="w-full h-80 object-cover rounded-xl mb-4 cursor-pointer" onclick="showImagePreview('${bike.image || 'https://placehold.co/600x400/1E3A8A/white?text=Bike'}')" onerror="this.src='https://placehold.co/600x400/1E3A8A/white?text=Bike'">
@@ -265,8 +302,10 @@ window.showBikeDetails = function(bikeId) {
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     
-    // Store bikeId for comments
-    window.currentBikeId = bikeId;
+    // Attach close event to all close buttons
+    modal.querySelectorAll('.close-modal-btn').forEach(btn => {
+        btn.onclick = closeAllModals;
+    });
 };
 
 window.submitComment = function(bikeId) {
@@ -289,21 +328,39 @@ window.submitReply = function(bikeId, commentId) {
     const replyText = input.value;
     if (!replyText.trim()) return;
     
-    const userName = token && currentUser ? currentUser.username : 'Guest';
+    const userName = token && currentUser ? currentUser.username : 'Admin';
     addReply(bikeId, commentId, replyText, userName);
     input.value = '';
     document.getElementById(`reply-form-${commentId}`).classList.add('hidden');
 };
 
+window.deleteComment = deleteComment;
+
+// ============= SOLD DETAILS WITH FEEDBACK =============
 window.showSoldDetails = function(soldId) {
     const sold = soldList.find(s => s._id === soldId);
     if (!sold) return;
+    
+    const soldFeedbacks = feedbacks[soldId] || [];
+    
+    const feedbacksHtml = soldFeedbacks.map(fb => `
+        <div class="bg-gray-50 rounded-lg p-3 mb-3">
+            <div class="flex items-center gap-2 mb-1">
+                <div class="flex text-yellow-500">
+                    ${'★'.repeat(fb.rating)}${'☆'.repeat(5 - fb.rating)}
+                </div>
+                <span class="font-semibold text-blue-600">${escapeHtml(fb.user)}</span>
+                <span class="text-xs text-gray-400">${fb.date}</span>
+            </div>
+            <p class="text-gray-700">${escapeHtml(fb.comment)}</p>
+        </div>
+    `).join('');
     
     const modalHtml = `
         <div class="bg-white rounded-2xl w-full max-w-2xl mx-auto p-6 max-h-[85vh] overflow-y-auto">
             <div class="flex justify-between items-start mb-4">
                 <h2 class="text-2xl font-black text-green-600">✅ ${escapeHtml(sold.name)}</h2>
-                <button onclick="closeAllModals()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                <button onclick="closeAllModals()" class="close-modal-btn text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
             </div>
             ${sold.image ? `
                 <div class="relative">
@@ -319,6 +376,26 @@ window.showSoldDetails = function(soldId) {
                 <div class="bg-gray-50 p-3 rounded-lg"><p class="text-gray-500 text-sm">📅 Sold Date</p><p class="text-lg font-semibold">${sold.month_year}</p></div>
                 <div class="bg-gray-50 p-3 rounded-lg"><p class="text-gray-500 text-sm">🕐 Recorded On</p><p class="text-lg font-semibold">${new Date(sold.created_at).toLocaleDateString()}</p></div>
             </div>
+            
+            <!-- Customer Feedback Section -->
+            <div class="mt-6 border-t pt-4">
+                <h3 class="text-lg font-bold mb-3">⭐ Customer Feedback</h3>
+                <div class="mb-4">
+                    <div class="mb-2">
+                        <p class="text-sm text-gray-600 mb-2">Rate your experience:</p>
+                        <div class="flex gap-1 mb-3" id="rating-stars">
+                            ${[1,2,3,4,5].map(i => `<i class="fas fa-star text-gray-300 text-2xl cursor-pointer hover:text-yellow-500" data-rating="${i}" onclick="setRating(${i})"></i>`).join('')}
+                        </div>
+                        <input type="hidden" id="selected-rating" value="0">
+                        <textarea id="feedback-comment" placeholder="Share your experience with this purchase..." class="w-full border rounded-lg px-4 py-2 mb-2" rows="2"></textarea>
+                        <button onclick="submitFeedback('${sold._id}')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">Submit Feedback</button>
+                    </div>
+                </div>
+                <div id="feedbacks-list" class="max-h-60 overflow-y-auto">
+                    ${feedbacksHtml || '<p class="text-gray-500 text-center py-4">No feedback yet. Be the first to share your experience!</p>'}
+                </div>
+            </div>
+            
             <div class="mt-6 flex gap-3">
                 ${token ? `
                     <button onclick="window.editSold('${sold._id}'); closeAllModals();" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg transition"><i class="fas fa-edit"></i> Edit Entry</button>
@@ -339,7 +416,68 @@ window.showSoldDetails = function(soldId) {
     modal.innerHTML = modalHtml;
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
+    
+    // Attach close event
+    modal.querySelectorAll('.close-modal-btn').forEach(btn => {
+        btn.onclick = closeAllModals;
+    });
 };
+
+window.setRating = function(rating) {
+    document.getElementById('selected-rating').value = rating;
+    for (let i = 1; i <= 5; i++) {
+        const star = document.querySelector(`#rating-stars i[data-rating="${i}"]`);
+        if (star) {
+            if (i <= rating) {
+                star.classList.remove('text-gray-300');
+                star.classList.add('text-yellow-500');
+            } else {
+                star.classList.remove('text-yellow-500');
+                star.classList.add('text-gray-300');
+            }
+        }
+    }
+};
+
+window.submitFeedback = function(soldId) {
+    const rating = parseInt(document.getElementById('selected-rating').value);
+    const comment = document.getElementById('feedback-comment').value;
+    
+    if (rating === 0) {
+        showToast('Please select a rating!', true);
+        return;
+    }
+    if (!comment.trim()) {
+        showToast('Please write your feedback!', true);
+        return;
+    }
+    
+    const userName = token && currentUser ? currentUser.username : 'Customer';
+    addFeedback(soldId, rating, comment, userName);
+    document.getElementById('selected-rating').value = 0;
+    document.getElementById('feedback-comment').value = '';
+    // Reset stars
+    for (let i = 1; i <= 5; i++) {
+        const star = document.querySelector(`#rating-stars i[data-rating="${i}"]`);
+        if (star) {
+            star.classList.remove('text-yellow-500');
+            star.classList.add('text-gray-300');
+        }
+    }
+};
+
+function addFeedback(soldId, rating, comment, userName) {
+    if (!feedbacks[soldId]) feedbacks[soldId] = [];
+    feedbacks[soldId].push({
+        id: Date.now(),
+        rating: rating,
+        comment: comment,
+        user: userName,
+        date: new Date().toLocaleString()
+    });
+    saveFeedbacks();
+    showSoldDetails(soldId);
+}
 
 // ============= PAGE TEMPLATES =============
 const templates = {
@@ -366,7 +504,7 @@ const templates = {
     
     sold: () => `
         <div class="container mx-auto px-4 py-8">
-            <div class="flex justify-between items-center mb-6 flex-wrap gap-3"><div><h1 class="text-3xl md:text-4xl font-black">✅ Recently Sold Bikes</h1><p class="text-gray-500">Click on any sold bike to view details</p></div>${token ? `<button onclick="window.openAddSoldModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold transition"><i class="fas fa-plus"></i> Add Sold Entry</button>` : ''}</div>
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-3"><div><h1 class="text-3xl md:text-4xl font-black">✅ Recently Sold Bikes</h1><p class="text-gray-500">Click on any sold bike to view details and leave feedback</p></div>${token ? `<button onclick="window.openAddSoldModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold transition"><i class="fas fa-plus"></i> Add Sold Entry</button>` : ''}</div>
             <div id="soldGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </div>
     `,
@@ -502,7 +640,7 @@ function renderBikes() {
                 </div>
                 <div class="mt-3 flex gap-2">
                     <span class="text-xs text-gray-400">🔍 Click for details</span>
-                    <a href="https://wa.me/94753503111?text=I'm%20interested%20in%20${encodeURIComponent(bike.name)}%20(${bike.price})" target="_blank" class="text-xs text-green-600 hover:text-green-800"><i class="fab fa-whatsapp"></i> Inquire</a>
+                    <a href="https://wa.me/94753503111?text=I'm%20interested%20in%20${encodeURIComponent(bike.name)}%20(${bike.price})" target="_blank" class="text-xs text-green-600 hover:text-green-800" onclick="event.stopPropagation()"><i class="fab fa-whatsapp"></i> Inquire</a>
                     ${token ? `<button onclick="event.stopPropagation(); markAsSold('${bike._id}')" class="text-xs text-purple-600 hover:text-purple-800"><i class="fas fa-tag"></i> Mark Sold</button>` : ''}
                 </div>
             </div>
@@ -524,7 +662,7 @@ function renderSold() {
                 <p class="font-bold text-green-700 text-lg">${s.sold_price}</p>
                 <p class="text-sm text-gray-600 mt-1"><i class="far fa-calendar-alt"></i> ${s.month_year} · Buyer: ${escapeHtml(s.buyer)}</p>
                 ${s.image ? `<div class="mt-2"><img src="${s.image}" class="w-full h-32 object-cover rounded-lg" onclick="event.stopPropagation(); showImagePreview('${s.image}')" onerror="this.style.display='none'"></div>` : ''}
-                <div class="mt-2 text-xs text-gray-400">🔍 Click for details</div>
+                <div class="mt-2 text-xs text-gray-400">🔍 Click for details | ⭐ Leave feedback</div>
             </div>
         </div>
     `).join('');
@@ -1025,6 +1163,7 @@ async function init() {
     console.log('🚀 Starting app...');
     
     loadComments();
+    loadFeedbacks();
     
     const savedToken = localStorage.getItem('token');
     if (savedToken) {
