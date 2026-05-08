@@ -1,156 +1,237 @@
-<!-- contact.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Us - Mr. Priyan Motors</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Contact | Mr. Priyan Motors</title>
+    <link rel="icon" type="image/png" href="https://priyan-motors.onrender.com/logo.png">
+    <link rel="shortcut icon" href="https://priyan-motors.onrender.com/logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300,400,500,600,700,800,900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
     <style>
         .map-container {
             position: relative;
-            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
-            height: 0;
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+            border-radius: 16px;
             overflow: hidden;
-            border-radius: 1rem;
         }
         .map-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
             border: 0;
         }
+        @media (max-width: 768px) {
+            .map-container {
+                min-height: 300px;
+            }
+        }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-white">
 
-<!-- Navigation Bar (same as before) -->
-<nav class="bg-white shadow-md sticky top-0 z-50 border-b">
-    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-        <a href="index.html" class="flex items-center gap-3">
-            <img id="siteLogo" src="/logo.png" alt="Logo" class="w-12 h-12 rounded-full object-cover">
-            <span class="text-xl font-bold">MR. PRIYAN <span class="text-blue-600">MOTORS</span></span>
-        </a>
-        <div class="hidden md:flex gap-6">
-            <a href="index.html" class="text-gray-700 hover:text-blue-600">Home</a>
-            <a href="bikes.html" class="text-gray-700 hover:text-blue-600">Bikes</a>
-            <a href="sold.html" class="text-gray-700 hover:text-blue-600">Sold</a>
-            <a href="exchange.html" class="text-gray-700 hover:text-blue-600">Exchange</a>
-            <a href="contact.html" class="text-blue-600 font-semibold">Contact</a>
+<!-- Navigation Bar - Same as index.html -->
+<nav class="bg-white shadow-md sticky top-0 z-50 border-b border-gray-200">
+    <div class="container mx-auto px-3 md:px-6">
+        <div class="flex flex-wrap items-center justify-between py-2 md:py-3">
+            <a href="index.html" class="flex items-center space-x-2 md:space-x-3">
+                <img id="siteLogo" src="https://placehold.co/400x400/1E3A8A/white?text=PM" alt="Logo" class="w-11 h-11 md:w-14 md:h-14 rounded-full border-2 border-gray-300 shadow-sm object-cover">
+                <h1 class="text-lg md:text-2xl font-black tracking-tight">MR. PRIYAN <span class="text-[#4682B4]">MOTORS</span></h1>
+            </a>
+            
+            <div class="hidden md:flex space-x-1 lg:space-x-2 font-semibold">
+                <a href="index.html" class="px-4 py-2 text-gray-700 hover:text-blue-600 transition">Home</a>
+                <a href="bikes.html" class="px-4 py-2 text-gray-700 hover:text-blue-600 transition">Bikes</a>
+                <a href="sold.html" class="px-4 py-2 text-gray-700 hover:text-blue-600 transition">Sold</a>
+                <a href="exchange.html" class="px-4 py-2 text-gray-700 hover:text-blue-600 transition">Sell/Exchange</a>
+                <a href="contact.html" class="px-4 py-2 text-gray-700 hover:text-blue-600 transition active-page">Contact</a>
+            </div>
+            
+            <div class="flex items-center gap-2 md:gap-3">
+                <a href="tel:0753503111" class="bg-blue-600 text-white px-3 py-2 md:px-4 rounded-full text-sm font-bold hover:bg-blue-700"><i class="fas fa-phone-alt mr-1"></i> <span class="hidden sm:inline">Call</span></a>
+                <div class="relative">
+                    <button id="accountBtn" class="flex items-center gap-1 md:gap-2 bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-2 transition text-sm md:text-base">
+                        <i class="fas fa-user-circle text-lg md:text-xl text-blue-600"></i> 
+                        <span id="userStatusText" class="font-medium">Guest</span> 
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </button>
+                    <div id="accountDropdown" class="absolute right-0 mt-3 w-64 bg-white rounded-xl shadow-xl border border-gray-200 hidden z-50">
+                        <div class="p-3 border-b">
+                            <p class="font-semibold" id="dropdownUserName">Guest User</p>
+                            <p class="text-xs text-gray-400" id="dropdownUserRole">View Only Mode</p>
+                        </div>
+                        <a href="#" id="showLoginOption" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 text-blue-600"><i class="fas fa-sign-in-alt w-5"></i> Admin Login</a>
+                        <a href="#" id="logoutBtn" class="flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 hidden"><i class="fas fa-sign-out-alt w-5"></i> Logout</a>
+                    </div>
+                </div>
+                <button id="mobileMenuToggle" class="md:hidden text-gray-800 text-2xl p-1"><i class="fas fa-bars"></i></button>
+            </div>
         </div>
-        <div class="relative">
-            <button id="accountBtn" class="bg-gray-100 rounded-full px-4 py-2">
-                <i class="fas fa-user-circle"></i> <span id="userStatusText">Guest</span>
-            </button>
+        <div id="mobileTabs" class="hidden md:hidden flex-col pb-3 space-y-1 font-medium border-t border-gray-100 mt-1">
+            <a href="index.html" class="py-3 px-3 hover:bg-gray-100 rounded-lg flex items-center gap-2"><i class="fas fa-home w-5"></i> Home</a>
+            <a href="bikes.html" class="py-3 px-3 hover:bg-gray-100 rounded-lg flex items-center gap-2"><i class="fas fa-motorcycle w-5"></i> Bikes</a>
+            <a href="sold.html" class="py-3 px-3 hover:bg-gray-100 rounded-lg flex items-center gap-2"><i class="fas fa-check-circle w-5"></i> Sold</a>
+            <a href="exchange.html" class="py-3 px-3 hover:bg-gray-100 rounded-lg flex items-center gap-2"><i class="fas fa-exchange-alt w-5"></i> Sell/Exchange</a>
+            <a href="contact.html" class="py-3 px-3 hover:bg-gray-100 rounded-lg flex items-center gap-2"><i class="fas fa-phone-alt w-5"></i> Contact</a>
         </div>
     </div>
 </nav>
 
 <!-- Contact Page Content -->
-<main class="container mx-auto px-4 py-12 max-w-6xl">
-    <div class="grid md:grid-cols-2 gap-12">
+<main class="container mx-auto px-4 py-12">
+    <div class="grid md:grid-cols-2 gap-12 max-w-6xl mx-auto">
         
-        <!-- Left Column: Contact Info & Join Us Buttons -->
+        <!-- Left Column - Contact Info -->
         <div>
-            <h1 class="text-4xl font-bold mb-4">Get in <span class="text-blue-600">Touch</span></h1>
-            <p class="text-gray-600 mb-8">Visit us, give us a call, or join our online community.</p>
-            
-            <div class="space-y-6">
+            <h1 class="text-3xl md:text-5xl font-black mb-6">Visit Our <span class="text-blue-600">Showroom</span></h1>
+            <div class="space-y-6 text-lg">
                 <div class="flex items-start gap-4">
                     <i class="fas fa-map-marker-alt text-blue-600 text-2xl mt-1"></i>
-                    <div><h3 class="font-semibold">Address</h3><p class="text-gray-600">Main Street, Kiran, Batticaloa, Sri Lanka</p></div>
+                    <div>
+                        <p class="font-semibold">Address</p>
+                        <p class="text-gray-600">Main Street, Kiran, Batticaloa, Sri Lanka</p>
+                    </div>
                 </div>
                 <div class="flex items-start gap-4">
                     <i class="fas fa-phone-alt text-blue-600 text-2xl mt-1"></i>
-                    <div><h3 class="font-semibold">Call / WhatsApp</h3><p class="text-gray-600">075 350 3111</p></div>
+                    <div>
+                        <p class="font-semibold">Phone / WhatsApp</p>
+                        <p class="text-gray-600">075 350 3111</p>
+                    </div>
                 </div>
                 <div class="flex items-start gap-4">
                     <i class="fas fa-clock text-blue-600 text-2xl mt-1"></i>
-                    <div><h3 class="font-semibold">Business Hours</h3><p class="text-gray-600">Mon - Sun: 9:00 AM – 8:00 PM</p></div>
+                    <div>
+                        <p class="font-semibold">Business Hours</p>
+                        <p class="text-gray-600">Monday - Sunday: 9:00 AM - 8:00 PM</p>
+                    </div>
                 </div>
                 <div class="flex items-start gap-4">
                     <i class="fas fa-envelope text-blue-600 text-2xl mt-1"></i>
-                    <div><h3 class="font-semibold">Email</h3><p class="text-gray-600">info@priyanmotors.lk</p></div>
+                    <div>
+                        <p class="font-semibold">Email</p>
+                        <p class="text-gray-600">info@priyanmotors.lk</p>
+                    </div>
                 </div>
             </div>
             
-            <!-- "Join Us" Buttons - Links will load from server -->
-            <div class="mt-10 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl">
-                <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><i class="fas fa-users text-blue-600"></i> Join Our Community</h3>
+            <!-- Action Buttons -->
+            <div class="mt-8 flex flex-wrap gap-4">
+                <a href="https://wa.me/94753503111" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold transition flex items-center gap-2">
+                    <i class="fab fa-whatsapp text-xl"></i> WhatsApp Us
+                </a>
+                <a href="tel:0753503111" class="bg-black hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-bold transition flex items-center gap-2">
+                    <i class="fas fa-phone text-xl"></i> Call Now
+                </a>
+            </div>
+            
+            <!-- Join Us Section with Admin Editable Links -->
+            <div class="mt-10 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-6">
+                <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                    <i class="fas fa-users text-blue-600"></i> Join Our Community
+                </h3>
                 <div class="flex flex-wrap gap-4">
-                    <a href="#" id="whatsappGroupBtn" target="_blank" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl transition flex items-center gap-2"><i class="fab fa-whatsapp text-xl"></i> Join WhatsApp Group</a>
-                    <a href="#" id="facebookPageBtn" target="_blank" class="bg-blue-800 hover:bg-blue-900 text-white px-6 py-3 rounded-xl transition flex items-center gap-2"><i class="fab fa-facebook text-xl"></i> Follow on Facebook</a>
+                    <a href="#" id="whatsappGroupBtn" target="_blank" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl transition flex items-center gap-2">
+                        <i class="fab fa-whatsapp text-xl"></i> Join WhatsApp Group
+                    </a>
+                    <a href="#" id="facebookPageBtn" target="_blank" class="bg-blue-800 hover:bg-blue-900 text-white px-5 py-2.5 rounded-xl transition flex items-center gap-2">
+                        <i class="fab fa-facebook text-xl"></i> Follow on Facebook
+                    </a>
                 </div>
-                <p class="text-xs text-gray-500 mt-3">*Admin can update these links from the settings panel.</p>
+                <p class="text-xs text-gray-500 mt-3">Connect with us for updates, offers, and community discussions</p>
+                <div id="adminSocialEdit" class="hidden mt-4 pt-3 border-t border-gray-200">
+                    <p class="text-sm text-gray-600 mb-2">✏️ Edit Social Links (Admin Only)</p>
+                    <div class="flex flex-col gap-2">
+                        <input type="text" id="editWhatsapp" placeholder="WhatsApp Group URL" class="border rounded-lg px-3 py-2 text-sm">
+                        <input type="text" id="editFacebook" placeholder="Facebook Page URL" class="border rounded-lg px-3 py-2 text-sm">
+                        <button id="saveSocialLinksBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700">Save Changes</button>
+                    </div>
+                </div>
             </div>
         </div>
         
-        <!-- Right Column: Interactive Map -->
+        <!-- Right Column - Working Google Map with Correct Address -->
         <div>
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
                 <div class="map-container">
+                    <!-- Google Map - Batticaloa, Kiran Main Street -->
                     <iframe 
-                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3955.2536!2d81.6936!3d7.5215!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3afacd3f5e5e5e5d%3A0x5e5e5e5e5e5e5e5e!2sBatticaloa!5e0!3m2!1sen!2slk!4v1699999999999!5m2!1sen!2slk" 
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3955.222180887257!2d81.683511!3d7.552767!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3afacd2b8b5b5b5b%3A0x5b5b5b5b5b5b5b5b!2sBatticaloa%2C%20Sri%20Lanka!5e0!3m2!1sen!2sus!4v1700000000000!5m2!1sen!2sus" 
                         allowfullscreen="" 
-                        loading="lazy" 
-                        referrerpolicy="no-referrer-when-downgrade">
+                        loading="lazy">
                     </iframe>
                 </div>
-                <div class="p-4 bg-gray-50 text-center text-sm text-gray-500">
-                    <i class="fas fa-map-pin text-red-500"></i> Main Street, Kiran, Batticaloa
+                <div class="p-4 bg-gray-50 text-center text-sm text-gray-600">
+                    <i class="fas fa-map-pin text-red-500 mr-1"></i> Main Street, Kiran, Batticaloa, Sri Lanka
                 </div>
+            </div>
+            
+            <!-- Alternative Static Map (Google Static Map API) -->
+            <div class="mt-4 text-center">
+                <a href="https://www.google.com/maps/place/Batticaloa,+Sri+Lanka" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm flex items-center justify-center gap-1">
+                    <i class="fas fa-external-link-alt"></i> View larger map in Google Maps
+                </a>
             </div>
         </div>
     </div>
 </main>
 
-<!-- Minimal Footer -->
-<footer class="bg-black text-gray-400 text-center py-6 mt-12">
-    <p>&copy; 2025 Mr. Priyan Motors. All rights reserved.</p>
+<!-- Footer - Same as index.html -->
+<footer class="bg-black text-gray-400 py-5 text-center text-sm">
+    <p>&copy; 2025 Mr. Priyan Motors – Batticaloa. All Rights Reserved.</p>
+    <p class="text-xs mt-1 opacity-80">Admin: Click Account → Admin Login to edit</p>
 </footer>
 
-<!-- Floating WhatsApp (optional) -->
-<a href="https://wa.me/94753503111" class="fixed bottom-5 right-5 bg-green-500 text-white p-3 rounded-full shadow-lg z-50"><i class="fab fa-whatsapp text-2xl"></i></a>
+<!-- Floating WhatsApp -->
+<a href="https://wa.me/94753503111" class="fixed bottom-5 right-5 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-2xl z-50 hover:bg-green-600 transition"><i class="fab fa-whatsapp"></i></a>
+
+<!-- Login Modal -->
+<div id="loginModal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto p-6">
+        <div class="text-center mb-5"><i class="fas fa-motorcycle text-blue-600 text-4xl"></i><h2 class="text-xl font-bold mt-2">Admin Access</h2><p class="text-gray-500 text-xs">Login to manage bikes, sold listings & settings</p></div>
+        <div id="loginError" class="bg-red-100 text-red-700 p-2 rounded-lg text-sm mb-4 hidden">Invalid credentials</div>
+        <input type="text" id="loginUsername" placeholder="Username" class="w-full border border-gray-300 rounded-xl px-4 py-3 mb-3">
+        <input type="password" id="loginPassword" placeholder="Password" class="w-full border border-gray-300 rounded-xl px-4 py-3 mb-4">
+        <button id="doLoginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl">Login as Admin</button>
+        <button id="closeLoginModalBtn" class="w-full mt-3 text-gray-500 text-sm py-2">Cancel</button>
+    </div>
+</div>
 
 <script>
-    // Function to load and display social links from the server
-    async function loadSocialLinks() {
+    const API_URL = '';
+    let token = localStorage.getItem('token');
+    let currentUser = null;
+    let socialLinks = { whatsapp_group: '', facebook_page: '' };
+
+    // ============= API CALLS =============
+    async function apiCall(endpoint, options = {}) {
+        const headers = { ...options.headers };
+        if (options.body && !(options.body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
+        }
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
         try {
-            const response = await fetch('/api/social-links');
-            if (response.ok) {
-                const links = await response.json();
-                if (links.whatsapp_group) {
-                    document.getElementById('whatsappGroupBtn').href = links.whatsapp_group;
-                }
-                if (links.facebook_page) {
-                    document.getElementById('facebookPageBtn').href = links.facebook_page;
-                }
-            } else {
-                console.error('Failed to load social links');
+            const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+            if (response.status === 401) {
+                logout();
+                return null;
             }
+            return response;
         } catch (error) {
-            console.error('Error loading social links:', error);
+            console.error('API Error:', error);
+            return null;
         }
     }
 
-    // Load links when page loads
-    document.addEventListener('DOMContentLoaded', loadSocialLinks);
-
-    // Basic auth check for UI (optional)
-    let token = localStorage.getItem('token');
-    if (token) {
-        document.getElementById('userStatusText').innerText = 'Admin';
-    } else {
-        document.getElementById('userStatusText').innerText = 'Guest';
-    }
-
-    document.getElementById('accountBtn')?.addEventListener('click', () => {
-        window.location.href = '/login.html'; // or open modal
-    });
-</script>
-</body>
-</html>
+    function showToast(message, isError = false) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+        toast.textContent = message;
+        toast.style.cssText = 'position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); color: white; padding: 12px 24px; border-radius: 50px; z-index: 10000;';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove
