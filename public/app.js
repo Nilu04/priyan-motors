@@ -1,4 +1,4 @@
-// app.js - Complete Working Frontend
+// app.js - Complete Working Frontend with Edit Functions
 const API_URL = '';
 let token = localStorage.getItem('token');
 let currentUser = null;
@@ -481,10 +481,8 @@ window.submitFeedbackAndRefresh = async function(soldId) {
 };
 
 window.deleteAndRefreshFeedback = async function(feedbackId, soldId) {
-    if (!confirm('Delete this feedback?')) return;
-    const response = await apiCall(`/api/feedbacks/${feedbackId}`, { method: 'DELETE' });
-    if (response && response.ok) {
-        showToast('Feedback deleted');
+    const success = await deleteFeedback(feedbackId);
+    if (success) {
         await showSoldDetails(soldId);
     }
 };
@@ -564,193 +562,90 @@ const templates = {
     `
 };
 
-// ============= NAVIGATION =============
-window.navigateTo = function(page) {
-    console.log('Navigating to:', page);
-    currentPage = page;
-    
-    document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(link => {
-        if (link.dataset.page === page) {
-            link.classList.add('active-page');
-        } else {
-            link.classList.remove('active-page');
-        }
-    });
-    
-    const pageContent = document.getElementById('pageContent');
-    if (pageContent && templates[page]) {
-        pageContent.innerHTML = templates[page]();
-    }
-    
-    if (page === 'bikes') loadBikes();
-    if (page === 'sold') loadSold();
-    if (page === 'contact') {
-        loadSocialLinks();
-        setTimeout(() => {
-            const editBtn = document.getElementById('editSocialLinksBtn');
-            if (editBtn) {
-                editBtn.onclick = () => {
-                    loadSocialLinksToModal();
-                    document.getElementById('socialLinksModal').classList.remove('hidden');
-                };
-            }
-        }, 100);
-    }
-    
-    window.scrollTo(0, 0);
-    const mobileTabs = document.getElementById('mobileTabs');
-    if (mobileTabs) mobileTabs.classList.add('hidden');
-};
-
-// ============= LOAD DATA =============
-async function loadBikes() {
-    const response = await apiCall('/api/bikes');
-    if (response && response.ok) {
-        bikes = await response.json();
-        renderBikes();
-    }
-}
-
-async function loadSold() {
-    const response = await apiCall('/api/sold');
-    if (response && response.ok) {
-        soldList = await response.json();
-        renderSold();
-    }
-}
-
-async function loadSocialLinks() {
-    const response = await apiCall('/api/settings/social');
-    if (response && response.ok) {
-        socialLinks = await response.json();
-    }
-}
-
-async function loadSocialLinksToModal() {
-    const response = await apiCall('/api/settings/social');
-    if (response && response.ok) {
-        const links = await response.json();
-        document.getElementById('whatsappGroupLink').value = links.whatsapp_group || '';
-        document.getElementById('facebookPageLink').value = links.facebook_page || '';
-    }
-}
-
-function renderBikes() {
-    const grid = document.getElementById('bikesGrid');
-    if (!grid) return;
-    if (bikes.length === 0) {
-        grid.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-motorcycle text-4xl text-gray-300 mb-3 block"></i><p class="text-gray-500">No bikes available. Admin can add new bikes.</p></div>';
-        return;
-    }
-    grid.innerHTML = bikes.map(bike => `
-        <div class="bg-white rounded-2xl overflow-hidden shadow-md bike-card border hover:shadow-lg transition cursor-pointer" onclick="window.showBikeDetails('${bike._id}')">
-            <img src="${bike.image || 'https://placehold.co/600x400/1E3A8A/white?text=Bike'}" class="bike-img w-full h-48 object-cover" onerror="this.src='https://placehold.co/600x400/1E3A8A/white?text=Bike'">
-            <div class="p-4">
-                <h3 class="text-xl font-black">${escapeHtml(bike.name)}</h3>
-                <div class="text-blue-600 font-bold text-xl">${bike.price}</div>
-                <div class="grid grid-cols-2 gap-1 text-xs text-gray-500 mt-2">
-                    <span><i class="far fa-calendar"></i> ${bike.year}</span>
-                    <span><i class="fas fa-road"></i> ${bike.km}</span>
-                    <span><i class="fas fa-map-marker-alt"></i> ${bike.location}</span>
-                    <span><i class="fas fa-tag"></i> ${bike.brand}</span>
-                </div>
-                <div class="mt-3 flex gap-2">
-                    <span class="text-xs text-gray-400">🔍 Click for details</span>
-                    <a href="https://wa.me/94753503111?text=I'm%20interested%20in%20${encodeURIComponent(bike.name)}%20(${bike.price})" target="_blank" class="text-xs text-green-600 hover:text-green-800" onclick="event.stopPropagation()"><i class="fab fa-whatsapp"></i> Inquire</a>
-                    ${token ? `<button onclick="event.stopPropagation(); window.markAsSold('${bike._id}')" class="text-xs text-purple-600 hover:text-purple-800"><i class="fas fa-tag"></i> Mark Sold</button>` : ''}
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function renderSold() {
-    const grid = document.getElementById('soldGrid');
-    if (!grid) return;
-    if (soldList.length === 0) {
-        grid.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-check-circle text-4xl text-gray-300 mb-3 block"></i><p class="text-gray-500">No sold records yet.</p></div>';
-        return;
-    }
-    grid.innerHTML = soldList.map(s => `
-        <div class="bg-white rounded-2xl overflow-hidden shadow-md sold-card border-l-8 border-green-500 hover:shadow-lg transition cursor-pointer" onclick="window.showSoldDetails('${s._id}')">
-            <div class="p-4">
-                <h3 class="text-xl font-bold">${escapeHtml(s.name)}</h3>
-                <p class="font-bold text-green-700 text-lg">${s.sold_price}</p>
-                <p class="text-sm text-gray-600 mt-1"><i class="far fa-calendar-alt"></i> ${s.month_year} · Buyer: ${escapeHtml(s.buyer)}</p>
-                ${s.image ? `<div class="mt-2"><img src="${s.image}" class="w-full h-32 object-cover rounded-lg" onclick="event.stopPropagation(); window.showImagePreview('${s.image}')" onerror="this.style.display='none'"></div>` : ''}
-                <div class="mt-2 text-xs text-gray-400">🔍 Click for details</div>
-            </div>
-        </div>
-    `).join('');
-}
-
-// ============= CRUD OPERATIONS =============
-window.editBike = (id) => {
+// ============= EDIT FUNCTIONS =============
+window.editBike = function(id) {
     const bike = bikes.find(b => b._id === id);
-    if (bike) {
-        document.getElementById('modalTitle').innerText = 'Edit Bike';
-        document.getElementById('editBikeId').value = bike._id;
-        document.getElementById('bikeName').value = bike.name;
-        document.getElementById('bikePrice').value = bike.price.replace('Rs.', '').replace(/,/g, '').trim();
-        document.getElementById('bikeYear').value = bike.year;
-        document.getElementById('bikeKm').value = bike.km;
-        document.getElementById('bikeLocation').value = bike.location;
-        document.getElementById('bikeBrand').value = bike.brand;
-        document.getElementById('bikeImageUrl').value = bike.image || '';
-        const bikePreview = document.getElementById('bikeImagePreview');
-        if (bike.image) {
-            bikePreview.src = bike.image;
-            bikePreview.classList.remove('hidden');
-        } else {
-            bikePreview.classList.add('hidden');
-        }
-        document.getElementById('editBikeModal').classList.remove('hidden');
+    if (!bike) {
+        showToast('Bike not found!', true);
+        return;
     }
+    
+    console.log('Editing bike:', bike);
+    
+    document.getElementById('modalTitle').innerText = 'Edit Bike';
+    document.getElementById('editBikeId').value = bike._id;
+    document.getElementById('bikeName').value = bike.name;
+    document.getElementById('bikePrice').value = bike.price.replace('Rs.', '').replace(/,/g, '').trim();
+    document.getElementById('bikeYear').value = bike.year;
+    document.getElementById('bikeKm').value = bike.km;
+    document.getElementById('bikeLocation').value = bike.location;
+    document.getElementById('bikeBrand').value = bike.brand;
+    document.getElementById('bikeImageUrl').value = bike.image || '';
+    
+    const bikePreview = document.getElementById('bikeImagePreview');
+    if (bike.image) {
+        bikePreview.src = bike.image;
+        bikePreview.classList.remove('hidden');
+    } else {
+        bikePreview.classList.add('hidden');
+    }
+    
+    document.getElementById('editBikeModal').classList.remove('hidden');
 };
 
-window.deleteBike = async (id) => {
+window.deleteBike = async function(id) {
     if (!confirm('Are you sure you want to delete this bike?')) return;
     const response = await apiCall(`/api/bikes/${id}`, { method: 'DELETE' });
     if (response && response.ok) {
         showToast('Bike deleted successfully');
         loadBikes();
+        closeAllModals();
     } else {
         showToast('Failed to delete bike', true);
     }
 };
 
-window.editSold = (id) => {
+window.editSold = function(id) {
     const sold = soldList.find(s => s._id === id);
-    if (sold) {
-        document.getElementById('soldModalTitle').innerText = 'Edit Sold Entry';
-        document.getElementById('editSoldId').value = sold._id;
-        document.getElementById('soldName').value = sold.name;
-        document.getElementById('soldPrice').value = sold.sold_price.replace('Rs.', '').replace(/,/g, '').trim();
-        document.getElementById('soldMonthYear').value = sold.month_year;
-        document.getElementById('soldBuyer').value = sold.buyer;
-        document.getElementById('soldImageUrl').value = sold.image || '';
-        const soldPreview = document.getElementById('soldImagePreview');
-        if (sold.image) {
-            soldPreview.src = sold.image;
-            soldPreview.classList.remove('hidden');
-        } else {
-            soldPreview.classList.add('hidden');
-        }
-        document.getElementById('editSoldModal').classList.remove('hidden');
+    if (!sold) {
+        showToast('Sold entry not found!', true);
+        return;
     }
+    
+    console.log('Editing sold entry:', sold);
+    
+    document.getElementById('soldModalTitle').innerText = 'Edit Sold Entry';
+    document.getElementById('editSoldId').value = sold._id;
+    document.getElementById('soldName').value = sold.name;
+    document.getElementById('soldPrice').value = sold.sold_price.replace('Rs.', '').replace(/,/g, '').trim();
+    document.getElementById('soldMonthYear').value = sold.month_year;
+    document.getElementById('soldBuyer').value = sold.buyer;
+    document.getElementById('soldImageUrl').value = sold.image || '';
+    
+    const soldPreview = document.getElementById('soldImagePreview');
+    if (sold.image) {
+        soldPreview.src = sold.image;
+        soldPreview.classList.remove('hidden');
+    } else {
+        soldPreview.classList.add('hidden');
+    }
+    
+    document.getElementById('editSoldModal').classList.remove('hidden');
 };
 
-window.deleteSold = async (id) => {
+window.deleteSold = async function(id) {
     if (!confirm('Are you sure you want to remove this sold record?')) return;
     const response = await apiCall(`/api/sold/${id}`, { method: 'DELETE' });
     if (response && response.ok) {
         showToast('Sold entry removed successfully');
         loadSold();
+        closeAllModals();
     } else {
         showToast('Failed to delete sold entry', true);
     }
 };
 
+// ============= ADD MODAL FUNCTIONS =============
 window.openAddBikeModal = function() {
     document.getElementById('modalTitle').innerText = 'Add New Bike';
     document.getElementById('editBikeId').value = '';
@@ -881,6 +776,126 @@ document.getElementById('saveSocialLinksBtn')?.addEventListener('click', async (
         }
     }
 });
+
+// ============= NAVIGATION =============
+window.navigateTo = function(page) {
+    console.log('Navigating to:', page);
+    currentPage = page;
+    
+    document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(link => {
+        if (link.dataset.page === page) {
+            link.classList.add('active-page');
+        } else {
+            link.classList.remove('active-page');
+        }
+    });
+    
+    const pageContent = document.getElementById('pageContent');
+    if (pageContent && templates[page]) {
+        pageContent.innerHTML = templates[page]();
+    }
+    
+    if (page === 'bikes') loadBikes();
+    if (page === 'sold') loadSold();
+    if (page === 'contact') {
+        loadSocialLinks();
+        setTimeout(() => {
+            const editBtn = document.getElementById('editSocialLinksBtn');
+            if (editBtn) {
+                editBtn.onclick = () => {
+                    loadSocialLinksToModal();
+                    document.getElementById('socialLinksModal').classList.remove('hidden');
+                };
+            }
+        }, 100);
+    }
+    
+    window.scrollTo(0, 0);
+    const mobileTabs = document.getElementById('mobileTabs');
+    if (mobileTabs) mobileTabs.classList.add('hidden');
+};
+
+// ============= LOAD DATA =============
+async function loadBikes() {
+    const response = await apiCall('/api/bikes');
+    if (response && response.ok) {
+        bikes = await response.json();
+        renderBikes();
+    }
+}
+
+async function loadSold() {
+    const response = await apiCall('/api/sold');
+    if (response && response.ok) {
+        soldList = await response.json();
+        renderSold();
+    }
+}
+
+async function loadSocialLinks() {
+    const response = await apiCall('/api/settings/social');
+    if (response && response.ok) {
+        socialLinks = await response.json();
+    }
+}
+
+async function loadSocialLinksToModal() {
+    const response = await apiCall('/api/settings/social');
+    if (response && response.ok) {
+        const links = await response.json();
+        document.getElementById('whatsappGroupLink').value = links.whatsapp_group || '';
+        document.getElementById('facebookPageLink').value = links.facebook_page || '';
+    }
+}
+
+function renderBikes() {
+    const grid = document.getElementById('bikesGrid');
+    if (!grid) return;
+    if (bikes.length === 0) {
+        grid.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-motorcycle text-4xl text-gray-300 mb-3 block"></i><p class="text-gray-500">No bikes available. Admin can add new bikes.</p></div>';
+        return;
+    }
+    grid.innerHTML = bikes.map(bike => `
+        <div class="bg-white rounded-2xl overflow-hidden shadow-md bike-card border hover:shadow-lg transition cursor-pointer" onclick="window.showBikeDetails('${bike._id}')">
+            <img src="${bike.image || 'https://placehold.co/600x400/1E3A8A/white?text=Bike'}" class="bike-img w-full h-48 object-cover" onerror="this.src='https://placehold.co/600x400/1E3A8A/white?text=Bike'">
+            <div class="p-4">
+                <h3 class="text-xl font-black">${escapeHtml(bike.name)}</h3>
+                <div class="text-blue-600 font-bold text-xl">${bike.price}</div>
+                <div class="grid grid-cols-2 gap-1 text-xs text-gray-500 mt-2">
+                    <span><i class="far fa-calendar"></i> ${bike.year}</span>
+                    <span><i class="fas fa-road"></i> ${bike.km}</span>
+                    <span><i class="fas fa-map-marker-alt"></i> ${bike.location}</span>
+                    <span><i class="fas fa-tag"></i> ${bike.brand}</span>
+                </div>
+                <div class="mt-3 flex gap-2">
+                    <span class="text-xs text-gray-400">🔍 Click for details</span>
+                    <a href="https://wa.me/94753503111?text=I'm%20interested%20in%20${encodeURIComponent(bike.name)}%20(${bike.price})" target="_blank" class="text-xs text-green-600 hover:text-green-800" onclick="event.stopPropagation()"><i class="fab fa-whatsapp"></i> Inquire</a>
+                    ${token ? `<button onclick="event.stopPropagation(); window.markAsSold('${bike._id}')" class="text-xs text-purple-600 hover:text-purple-800"><i class="fas fa-tag"></i> Mark Sold</button>` : ''}
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderSold() {
+    const grid = document.getElementById('soldGrid');
+    if (!grid) return;
+    if (soldList.length === 0) {
+        grid.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-check-circle text-4xl text-gray-300 mb-3 block"></i><p class="text-gray-500">No sold records yet.</p></div>';
+        return;
+    }
+    grid.innerHTML = soldList.map(s => `
+        <div class="bg-white rounded-2xl overflow-hidden shadow-md sold-card border-l-8 border-green-500 hover:shadow-lg transition cursor-pointer" onclick="window.showSoldDetails('${s._id}')">
+            <div class="p-4">
+                <h3 class="text-xl font-bold">${escapeHtml(s.name)}</h3>
+                <p class="font-bold text-green-700 text-lg">${s.sold_price}</p>
+                <p class="text-sm text-gray-600 mt-1"><i class="far fa-calendar-alt"></i> ${s.month_year} · Buyer: ${escapeHtml(s.buyer)}</p>
+                ${s.image ? `<div class="mt-2"><img src="${s.image}" class="w-full h-32 object-cover rounded-lg" onclick="event.stopPropagation(); window.showImagePreview('${s.image}')" onerror="this.style.display='none'"></div>` : ''}
+                <div class="mt-2 text-xs text-gray-400">🔍 Click for details</div>
+            </div>
+        </div>
+    `).join('');
+}
 
 // ============= SETTINGS & AUTHENTICATION =============
 document.getElementById('settingsMenuItem')?.addEventListener('click', (e) => {
