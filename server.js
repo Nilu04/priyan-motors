@@ -1,4 +1,4 @@
-// server.js - Complete Backend with Comments and Feedback (ADDED MISSING ROUTES)
+// server.js - Complete with Reply to Feedback
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -83,7 +83,12 @@ const feedbackSchema = new mongoose.Schema({
   rating: { type: Number, required: true, min: 1, max: 5 },
   comment: { type: String, required: true },
   user: { type: String, default: 'Customer' },
-  date: { type: String, default: () => new Date().toLocaleString() }
+  date: { type: String, default: () => new Date().toLocaleString() },
+  replies: [{
+    text: String,
+    user: String,
+    date: String
+  }]
 });
 
 const settingSchema = new mongoose.Schema({
@@ -396,7 +401,6 @@ app.post('/api/comments/:commentId/reply', async (req, res) => {
   }
 });
 
-// ONLY ADMIN can delete comments
 app.delete('/api/comments/:commentId', authenticateToken, async (req, res) => {
   try {
     await Comment.findByIdAndDelete(req.params.commentId);
@@ -406,7 +410,7 @@ app.delete('/api/comments/:commentId', authenticateToken, async (req, res) => {
   }
 });
 
-// ============= FEEDBACK ROUTES =============
+// ============= FEEDBACK ROUTES (with reply) =============
 app.get('/api/feedbacks/:soldId', async (req, res) => {
   try {
     const feedbacks = await Feedback.find({ soldId: req.params.soldId }).sort({ _id: -1 });
@@ -426,7 +430,22 @@ app.post('/api/feedbacks', async (req, res) => {
   }
 });
 
-// ONLY ADMIN can delete feedbacks
+app.post('/api/feedbacks/:feedbackId/reply', async (req, res) => {
+  try {
+    const { feedbackId } = req.params;
+    const { text, user } = req.body;
+    const feedback = await Feedback.findById(feedbackId);
+    if (!feedback) {
+      return res.status(404).json({ error: 'Feedback not found' });
+    }
+    feedback.replies.push({ text, user: user || 'Admin', date: new Date().toLocaleString() });
+    await feedback.save();
+    res.json(feedback);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.delete('/api/feedbacks/:feedbackId', authenticateToken, async (req, res) => {
   try {
     await Feedback.findByIdAndDelete(req.params.feedbackId);
