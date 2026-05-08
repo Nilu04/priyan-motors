@@ -1,4 +1,4 @@
-// server.js - Complete Optimized Backend
+// server.js - Complete with Comments and Feedback
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -66,6 +66,31 @@ const soldSchema = new mongoose.Schema({
   created_at: { type: Date, default: Date.now }
 });
 
+const commentSchema = new mongoose.Schema({
+  bikeId: { type: String, required: true },
+  text: { type: String, required: true },
+  user: { type: String, default: 'Guest' },
+  date: { type: String, default: () => new Date().toLocaleString() },
+  replies: [{
+    text: String,
+    user: String,
+    date: String
+  }]
+});
+
+const feedbackSchema = new mongoose.Schema({
+  soldId: { type: String, required: true },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  comment: { type: String, required: true },
+  user: { type: String, default: 'Customer' },
+  date: { type: String, default: () => new Date().toLocaleString() },
+  replies: [{
+    text: String,
+    user: String,
+    date: String
+  }]
+});
+
 const settingSchema = new mongoose.Schema({
   key: { type: String, unique: true, required: true },
   value: { type: String, required: true },
@@ -75,6 +100,8 @@ const settingSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 const Bike = mongoose.model('Bike', bikeSchema);
 const Sold = mongoose.model('Sold', soldSchema);
+const Comment = mongoose.model('Comment', commentSchema);
+const Feedback = mongoose.model('Feedback', feedbackSchema);
 const Setting = mongoose.model('Setting', settingSchema);
 
 // Helper: Convert buffer to Base64
@@ -323,6 +350,96 @@ app.delete('/api/sold/:id', authenticateToken, async (req, res) => {
     }
     await Sold.findByIdAndDelete(id);
     res.json({ message: 'Sold entry deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============= COMMENTS ROUTES =============
+app.get('/api/comments/:bikeId', async (req, res) => {
+  try {
+    const comments = await Comment.find({ bikeId: req.params.bikeId }).sort({ _id: -1 });
+    res.json(comments);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/comments', async (req, res) => {
+  try {
+    const { bikeId, text, user } = req.body;
+    const comment = await Comment.create({ bikeId, text, user: user || 'Guest' });
+    res.json(comment);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/comments/:commentId/reply', async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { text, user } = req.body;
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+    comment.replies.push({ text, user: user || 'Admin', date: new Date().toLocaleString() });
+    await comment.save();
+    res.json(comment);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/comments/:commentId', authenticateToken, async (req, res) => {
+  try {
+    await Comment.findByIdAndDelete(req.params.commentId);
+    res.json({ message: 'Comment deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============= FEEDBACK ROUTES =============
+app.get('/api/feedbacks/:soldId', async (req, res) => {
+  try {
+    const feedbacks = await Feedback.find({ soldId: req.params.soldId }).sort({ _id: -1 });
+    res.json(feedbacks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/feedbacks', async (req, res) => {
+  try {
+    const { soldId, rating, comment, user } = req.body;
+    const feedback = await Feedback.create({ soldId, rating, comment, user: user || 'Customer' });
+    res.json(feedback);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/feedbacks/:feedbackId/reply', async (req, res) => {
+  try {
+    const { feedbackId } = req.params;
+    const { text, user } = req.body;
+    const feedback = await Feedback.findById(feedbackId);
+    if (!feedback) {
+      return res.status(404).json({ error: 'Feedback not found' });
+    }
+    feedback.replies.push({ text, user: user || 'Admin', date: new Date().toLocaleString() });
+    await feedback.save();
+    res.json(feedback);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/feedbacks/:feedbackId', authenticateToken, async (req, res) => {
+  try {
+    await Feedback.findByIdAndDelete(req.params.feedbackId);
+    res.json({ message: 'Feedback deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
