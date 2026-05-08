@@ -35,14 +35,12 @@ footer {
 }
 
 .bike-img {
-    aspect-ratio: 4/3;
     width: 100%;
     height: 200px;
     object-fit: cover;
 }
 
 .sold-img {
-    aspect-ratio: 4/3;
     width: 100%;
     height: 200px;
     object-fit: cover;
@@ -78,16 +76,6 @@ footer {
     10% { opacity: 1; }
     90% { opacity: 1; }
     100% { opacity: 0; }
-}
-
-.logo-clickable {
-    cursor: pointer;
-    transition: transform 0.2s, opacity 0.2s;
-}
-
-.logo-clickable:hover {
-    transform: scale(1.05);
-    opacity: 0.9;
 }
 
 button {
