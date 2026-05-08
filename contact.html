@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Contact | Mr. Priyan Motors</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300,400,500,600,700,800,900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-white">
+
+<!-- Navigation Bar -->
+<nav class="bg-white shadow-md sticky top-0 z-50 border-b border-gray-200">
+    <div class="container mx-auto px-3 md:px-6">
+        <div class="flex flex-wrap items-center justify-between py-2 md:py-3">
+            <div class="flex items-center space-x-2 md:space-x-3 logo-clickable" id="clickableLogo">
+                <img id="siteLogo" src="https://placehold.co/400x400/1E3A8A/white?text=PM" alt="Logo" class="w-11 h-11 md:w-14 md:h-14 rounded-full border-2 border-gray-300 shadow-sm object-cover">
+                <h1 class="text-lg md:text-2xl font-black tracking-tight">MR. PRIYAN <span class="text-[#4682B4]">MOTORS</span></h1>
+            </div>
+            
+            <div class="hidden md:flex space-x-1 lg:space-x-2 font-semibold">
+                <a href="index.html" class="px-4 py-2 text-gray-700 hover:text-blue-600 transition">Home</a>
+                <a href="bikes.html" class="px-4 py-2 text-gray-700 hover:text-blue-600 transition">Bikes</a>
+                <a href="sold.html" class="px-4 py-2 text-gray-700 hover:text-blue-600 transition">Sold</a>
+                <a href="exchange.html" class="px-4 py-2 text-gray-700 hover:text-blue-600 transition">Sell/Exchange</a>
+                <a href="contact.html" class="px-4 py-2 text-gray-700 hover:text-blue-600 transition active-page">Contact</a>
+            </div>
+            
+            <div class="flex items-center gap-2 md:gap-3">
+                <a href="tel:0753503111" class="bg-blue-600 text-white px-3 py-2 md:px-4 rounded-full text-sm font-bold hover:bg-blue-700"><i class="fas fa-phone-alt mr-1"></i> <span class="hidden sm:inline">Call</span></a>
+                <div class="relative">
+                    <button id="accountBtn" class="flex items-center gap-1 md:gap-2 bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-2 transition text-sm md:text-base">
+                        <i class="fas fa-user-circle text-lg md:text-xl text-blue-600"></i> 
+                        <span id="userStatusText" class="font-medium">Guest</span> 
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </button>
+                    <div id="accountDropdown" class="absolute right-0 mt-3 w-64 bg-white rounded-xl shadow-xl border border-gray-200 hidden z-50">
+                        <div class="p-3 border-b">
+                            <p class="font-semibold" id="dropdownUserName">Guest User</p>
+                            <p class="text-xs text-gray-400" id="dropdownUserRole">View Only Mode</p>
+                        </div>
+                        <a href="#" id="showLoginOption" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 text-blue-600"><i class="fas fa-sign-in-alt w-5"></i> Admin Login</a>
+                        <a href="#" id="logoutBtn" class="flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 hidden"><i class="fas fa-sign-out-alt w-5"></i> Logout</a>
+                    </div>
+                </div>
+                <button id="mobileMenuToggle" class="md:hidden text-gray-800 text-2xl p-1"><i class="fas fa-bars"></i></button>
+            </div>
+        </div>
+        <div id="mobileTabs" class="hidden md:hidden flex-col pb-3 space-y-1 font-medium border-t border-gray-100 mt-1">
+            <a href="index.html" class="py-3 px-3 hover:bg-gray-100 rounded-lg flex items-center gap-2"><i class="fas fa-home w-5"></i> Home</a>
+            <a href="bikes.html" class="py-3 px-3 hover:bg-gray-100 rounded-lg flex items-center gap-2"><i class="fas fa-motorcycle w-5"></i> Bikes</a>
+            <a href="sold.html" class="py-3 px-3 hover:bg-gray-100 rounded-lg flex items-center gap-2"><i class="fas fa-check-circle w-5"></i> Sold</a>
+            <a href="exchange.html" class="py-3 px-3 hover:bg-gray-100 rounded-lg flex items-center gap-2"><i class="fas fa-exchange-alt w-5"></i> Sell/Exchange</a>
+            <a href="contact.html" class="py-3 px-3 hover:bg-gray-100 rounded-lg flex items-center gap-2"><i class="fas fa-phone-alt w-5"></i> Contact</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Contact Page Content -->
+<main class="container mx-auto px-4 py-12">
+    <div class="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
+        <div>
+            <h1 class="text-3xl md:text-5xl font-black mb-6">Visit Our <span class="text-blue-600">Showroom</span></h1>
+            <div class="space-y-6 text-lg">
+                <div class="flex items-start gap-4"><i class="fas fa-map-marker-alt text-blue-600 text-2xl mt-1"></i><div><p class="font-semibold">Address</p><p class="text-gray-600">Main Street, Kiran, Batticaloa, Sri Lanka</p></div></div>
+                <div class="flex items-start gap-4"><i class="fas fa-phone-alt text-blue-600 text-2xl mt-1"></i><div><p class="font-semibold">Phone / WhatsApp</p><p class="text-gray-600">075 350 3111</p></div></div>
+                <div class="flex items-start gap-4"><i class="fas fa-clock text-blue-600 text-2xl mt-1"></i><div><p class="font-semibold">Business Hours</p><p class="text-gray-600">Monday - Sunday: 9:00 AM - 8:00 PM</p></div></div>
+                <div class="flex items-start gap-4"><i class="fas fa-envelope text-blue-600 text-2xl mt-1"></i><div><p class="font-semibold">Email</p><p class="text-gray-600">info@priyanmotors.lk</p></div></div>
+            </div>
+            <div class="mt-8 flex gap-4 flex-wrap">
+                <a href="https://wa.me/94753503111" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold transition"><i class="fab fa-whatsapp mr-2"></i> WhatsApp Us</a>
+                <a href="tel:0753503111" class="bg-black hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-bold transition"><i class="fas fa-phone mr-2"></i> Call Now</a>
+            </div>
+        </div>
+        <div class="bg-gray-200 rounded-2xl h-80 flex flex-col items-center justify-center">
+            <i class="fas fa-map-marked-alt text-4xl text-gray-500 mb-3"></i>
+            <p class="text-gray-600 text-center px-4">📍 Main Street, Kiran<br>Batticaloa, Sri Lanka</p>
+            <p class="text-xs text-gray-500 mt-2">Google Map location available</p>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <p>&copy; 2025 Mr. Priyan Motors – Batticaloa. All Rights Reserved.</p>
+    <p class="text-xs mt-1 opacity-80">Admin: Click Account → Admin Login to edit</p>
+</footer>
+
+<a href="https://wa.me/94753503111" class="fixed bottom-5 right-5 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-2xl z-50 hover:bg-green-600 transition"><i class="fab fa-whatsapp"></i></a>
+
+<script src="script.js"></script>
+</body>
+</html>
