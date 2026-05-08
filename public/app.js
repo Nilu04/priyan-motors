@@ -1,4 +1,4 @@
-// app.js - Complete Working Version with Edit Functions and Proper Permissions
+// app.js - Complete Working Version with Edit Functions and Feedback Replies
 const API_URL = '';
 let token = localStorage.getItem('token');
 let currentUser = null;
@@ -71,7 +71,7 @@ async function apiCall(endpoint, options = {}) {
     }
 }
 
-// ============= COMMENTS API (Everyone can add, only admin can delete) =============
+// ============= COMMENTS API =============
 async function loadComments(bikeId) {
     const response = await apiCall(`/api/comments/${bikeId}`);
     if (response && response.ok) {
@@ -104,7 +104,6 @@ async function addReply(commentId, text, userName) {
     return false;
 }
 
-// Only admin can delete comments
 async function deleteComment(commentId) {
     if (!token) {
         showToast('Only admin can delete comments', true);
@@ -119,7 +118,7 @@ async function deleteComment(commentId) {
     return false;
 }
 
-// ============= FEEDBACK API (Everyone can add, only admin can delete) =============
+// ============= FEEDBACK API (with reply) =============
 async function loadFeedbacks(soldId) {
     const response = await apiCall(`/api/feedbacks/${soldId}`);
     if (response && response.ok) {
@@ -140,7 +139,18 @@ async function addFeedback(soldId, rating, comment, userName) {
     return false;
 }
 
-// Only admin can delete feedbacks
+async function addFeedbackReply(feedbackId, text, userName) {
+    const response = await apiCall(`/api/feedbacks/${feedbackId}/reply`, {
+        method: 'POST',
+        body: JSON.stringify({ text, user: userName })
+    });
+    if (response && response.ok) {
+        showToast('Reply added!');
+        return true;
+    }
+    return false;
+}
+
 async function deleteFeedback(feedbackId) {
     if (!token) {
         showToast('Only admin can delete feedback', true);
@@ -155,7 +165,7 @@ async function deleteFeedback(feedbackId) {
     return false;
 }
 
-// ============= IMAGE PREVIEW FUNCTION =============
+// ============= IMAGE PREVIEW =============
 window.showImagePreview = function(imageUrl) {
     let modal = document.getElementById('imagePreviewModal');
     if (!modal) {
@@ -177,7 +187,7 @@ window.showImagePreview = function(imageUrl) {
     modal.style.display = 'flex';
 };
 
-// ============= MARK AS SOLD FUNCTION =============
+// ============= MARK AS SOLD =============
 window.markAsSold = async function(bikeId) {
     if (!token) {
         showToast('Please login as admin to mark as sold', true);
@@ -352,7 +362,7 @@ window.deleteAndRefreshComment = async function(commentId, bikeId) {
     }
 };
 
-// ============= SOLD DETAILS WITH FEEDBACK =============
+// ============= SOLD DETAILS WITH FEEDBACK AND REPLIES =============
 window.showSoldDetails = async function(soldId) {
     const sold = soldList.find(s => s._id === soldId);
     if (!sold) return;
@@ -369,9 +379,26 @@ window.showSoldDetails = async function(soldId) {
                     <span class="font-semibold text-blue-600">${escapeHtml(fb.user)}</span>
                     <span class="text-xs text-gray-400">${fb.date}</span>
                 </div>
-                ${token ? `<button onclick="window.deleteAndRefreshFeedback('${fb._id}', '${soldId}')" class="text-xs text-red-500 hover:text-red-700"><i class="fas fa-trash"></i> Delete</button>` : ''}
+                <div>
+                    <button onclick="window.showFeedbackReplyForm('${fb._id}')" class="text-xs text-blue-500 hover:text-blue-700 mr-2">Reply</button>
+                    ${token ? `<button onclick="window.deleteAndRefreshFeedback('${fb._id}', '${soldId}')" class="text-xs text-red-500 hover:text-red-700"><i class="fas fa-trash"></i> Delete</button>` : ''}
+                </div>
             </div>
             <p class="text-gray-700">${escapeHtml(fb.comment)}</p>
+            <div id="feedback-replies-${fb._id}" class="ml-4 mt-2">
+                ${(fb.replies || []).map(reply => `
+                    <div class="bg-gray-100 rounded-lg p-2 mb-2">
+                        <div><span class="font-semibold text-green-600">${escapeHtml(reply.user)}</span> <span class="text-xs text-gray-400">${reply.date}</span></div>
+                        <p class="text-gray-700 text-sm">${escapeHtml(reply.text)}</p>
+                    </div>
+                `).join('')}
+            </div>
+            <div id="feedback-reply-form-${fb._id}" class="hidden mt-2">
+                <div class="flex gap-2">
+                    <input type="text" id="feedback-reply-input-${fb._id}" placeholder="Write a reply..." class="flex-1 border rounded-lg px-3 py-1 text-sm">
+                    <button onclick="window.submitFeedbackReplyAndRefresh('${fb._id}', '${soldId}')" class="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm">Reply</button>
+                </div>
+            </div>
         </div>
     `).join('');
     
@@ -482,6 +509,23 @@ window.submitFeedbackAndRefresh = async function(soldId) {
     await window.showSoldDetails(soldId);
 };
 
+window.showFeedbackReplyForm = function(feedbackId) {
+    const form = document.getElementById(`feedback-reply-form-${feedbackId}`);
+    if (form) form.classList.toggle('hidden');
+};
+
+window.submitFeedbackReplyAndRefresh = async function(feedbackId, soldId) {
+    const input = document.getElementById(`feedback-reply-input-${feedbackId}`);
+    const replyText = input.value;
+    if (!replyText.trim()) return;
+    
+    const userName = token && currentUser ? currentUser.username : 'Admin';
+    await addFeedbackReply(feedbackId, replyText, userName);
+    input.value = '';
+    document.getElementById(`feedback-reply-form-${feedbackId}`).classList.add('hidden');
+    await window.showSoldDetails(soldId);
+};
+
 window.deleteAndRefreshFeedback = async function(feedbackId, soldId) {
     const success = await deleteFeedback(feedbackId);
     if (success) {
@@ -497,8 +541,7 @@ window.editBike = function(id) {
         return;
     }
     
-    console.log('Editing bike:', bike);
-    
+    // Fill the edit modal with bike data
     document.getElementById('modalTitle').innerText = 'Edit Bike';
     document.getElementById('editBikeId').value = bike._id;
     document.getElementById('bikeName').value = bike.name;
@@ -542,8 +585,6 @@ window.editSold = function(id) {
         showToast('Sold entry not found!', true);
         return;
     }
-    
-    console.log('Editing sold entry:', sold);
     
     document.getElementById('soldModalTitle').innerText = 'Edit Sold Entry';
     document.getElementById('editSoldId').value = sold._id;
