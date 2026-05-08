@@ -53,10 +53,14 @@
                         <i class="fas fa-chevron-down text-xs"></i>
                     </button>
                     <div id="accountDropdown" class="absolute right-0 mt-3 w-64 bg-white rounded-xl shadow-xl border border-gray-200 hidden z-50">
-                        <div class="p-3 border-b">
-                            <p class="font-semibold" id="dropdownUserName">Guest User</p>
-                            <p class="text-xs text-gray-400" id="dropdownUserRole">View Only Mode</p>
+                        <div class="p-3 border-b flex items-center gap-3">
+                            <i class="fas fa-user-circle text-3xl text-gray-400"></i>
+                            <div>
+                                <p class="font-semibold" id="dropdownUserName">Guest User</p>
+                                <p class="text-xs text-gray-400" id="dropdownUserRole">View Only Mode</p>
+                            </div>
                         </div>
+                        <a href="#" id="profileMenuItem" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50"><i class="fas fa-id-card w-5"></i> Profile</a>
                         <a href="#" id="settingsMenuItem" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50"><i class="fas fa-sliders-h w-5"></i> Settings</a>
                         <a href="#" id="changePasswordMenuItem" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50"><i class="fas fa-key w-5"></i> Change Password</a>
                         <a href="#" id="changeUsernameMenuItem" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50"><i class="fas fa-user-edit w-5"></i> Change Username</a>
@@ -89,7 +93,9 @@
 
 <a href="https://wa.me/94753503111" class="fixed bottom-5 right-5 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-2xl z-50 hover:bg-green-600 transition"><i class="fab fa-whatsapp"></i></a>
 
-<!-- Modals -->
+<!-- ==================== ALL MODALS ==================== -->
+
+<!-- Login Modal -->
 <div id="loginModal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto p-6">
         <div class="text-center mb-5"><i class="fas fa-motorcycle text-blue-600 text-4xl"></i><h2 class="text-xl font-bold mt-2">Admin Access</h2><p class="text-gray-500 text-xs">Login to manage bikes, sold listings & settings</p></div>
@@ -101,6 +107,22 @@
     </div>
 </div>
 
+<!-- Profile Modal -->
+<div id="profileModal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md p-6">
+        <h3 class="text-xl font-bold mb-4">My Profile</h3>
+        <div class="text-center mb-4">
+            <img id="profilePreview" src="" class="w-24 h-24 rounded-full object-cover mx-auto border-4 border-blue-200">
+            <button id="uploadProfilePicBtn" class="mt-2 text-sm text-blue-600 hover:text-blue-800 transition">Change Profile Picture</button>
+            <input type="file" id="profilePicInput" accept="image/*" class="hidden">
+        </div>
+        <p><strong>Username:</strong> <span id="profileUsername"></span></p>
+        <p><strong>Role:</strong> <span id="profileRole"></span></p>
+        <button id="closeProfileModalBtn" class="w-full mt-4 bg-gray-300 hover:bg-gray-400 py-2 rounded-lg transition">Close</button>
+    </div>
+</div>
+
+<!-- Settings Modal -->
 <div id="settingsModal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay p-4">
     <div class="bg-white rounded-2xl w-full max-w-md p-6">
         <h3 class="text-xl font-bold mb-4">Settings</h3>
@@ -111,10 +133,11 @@
             <p class="text-gray-600">• <i class="fas fa-key"></i> Change password from Account menu</p>
             <p class="text-gray-600">• <i class="fas fa-user-edit"></i> Change username from Account menu</p>
         </div>
-        <button id="closeSettingsModalBtn" class="w-full mt-4 bg-gray-300 py-2 rounded-lg">Close</button>
+        <button id="closeSettingsModalBtn" class="w-full mt-4 bg-gray-300 hover:bg-gray-400 py-2 rounded-lg transition">Close</button>
     </div>
 </div>
 
+<!-- Change Password Modal -->
 <div id="changePasswordModal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay p-4">
     <div class="bg-white rounded-2xl w-full max-w-md p-6">
         <h3 class="text-xl font-bold mb-4">Change Password</h3>
@@ -122,21 +145,23 @@
         <input type="password" id="newPassword" placeholder="New Password" class="w-full border p-3 rounded-lg mb-3">
         <input type="password" id="confirmPassword" placeholder="Confirm New Password" class="w-full border p-3 rounded-lg mb-4">
         <div id="pwdError" class="text-red-500 text-sm mb-2 hidden"></div>
-        <button id="savePasswordBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">Update Password</button>
+        <button id="savePasswordBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition">Update Password</button>
         <button id="closePasswordModalBtn" class="w-full mt-2 text-gray-500 py-2">Cancel</button>
     </div>
 </div>
 
+<!-- Change Username Modal -->
 <div id="changeUsernameModal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay p-4">
     <div class="bg-white rounded-2xl w-full max-w-md p-6">
         <h3 class="text-xl font-bold mb-4">Change Username</h3>
         <input type="text" id="newUsername" placeholder="New Username" class="w-full border p-3 rounded-lg mb-4">
         <div id="usernameError" class="text-red-500 text-sm mb-2 hidden"></div>
-        <button id="saveUsernameBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">Update Username</button>
+        <button id="saveUsernameBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition">Update Username</button>
         <button id="closeUsernameModalBtn" class="w-full mt-2 text-gray-500 py-2">Cancel</button>
     </div>
 </div>
 
+<!-- Edit Bike Modal -->
 <div id="editBikeModal" class="fixed inset-0 z-[300] hidden items-center justify-center modal-overlay p-4">
     <div class="bg-white rounded-2xl w-full max-w-lg mx-auto p-5 max-h-[90vh] overflow-y-auto">
         <h3 id="modalTitle" class="text-xl font-bold mb-4">Edit Bike</h3>
@@ -151,12 +176,13 @@
         <img id="bikeImagePreview" src="" class="w-20 h-20 object-cover rounded-lg mb-2 hidden">
         <input type="text" id="bikeImageUrl" placeholder="Or paste image URL" class="w-full border p-2 rounded-lg mb-3">
         <div class="flex justify-end gap-3">
-            <button id="closeModalBtn" class="px-5 py-2 bg-gray-300 rounded-lg">Cancel</button>
-            <button id="saveBikeBtn" class="px-5 py-2 bg-blue-600 text-white rounded-lg">Save</button>
+            <button id="closeModalBtn" class="px-5 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg transition">Cancel</button>
+            <button id="saveBikeBtn" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">Save</button>
         </div>
     </div>
 </div>
 
+<!-- Edit Sold Modal -->
 <div id="editSoldModal" class="fixed inset-0 z-[300] hidden items-center justify-center modal-overlay p-4">
     <div class="bg-white rounded-2xl w-full max-w-lg mx-auto p-5 max-h-[90vh] overflow-y-auto">
         <h3 id="soldModalTitle" class="text-xl font-bold mb-4">Sold Bike Details</h3>
@@ -169,29 +195,31 @@
         <img id="soldImagePreview" src="" class="w-20 h-20 object-cover rounded-lg mb-2 hidden">
         <input type="text" id="soldImageUrl" placeholder="Or paste image URL" class="w-full border p-2 rounded-lg mb-3">
         <div class="flex justify-end gap-3">
-            <button id="closeSoldModalBtn" class="px-5 py-2 bg-gray-300 rounded-lg">Cancel</button>
-            <button id="saveSoldBtn" class="px-5 py-2 bg-blue-600 text-white rounded-lg">Save</button>
+            <button id="closeSoldModalBtn" class="px-5 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg transition">Cancel</button>
+            <button id="saveSoldBtn" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">Save</button>
         </div>
     </div>
 </div>
 
+<!-- Update Logo Modal -->
 <div id="editLogoModal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay p-4">
     <div class="bg-white rounded-2xl w-full max-w-md p-6">
         <h3 class="text-xl font-bold mb-4">Update Website Logo</h3>
         <div class="text-center mb-4"><img id="logoPreview" src="" class="w-28 h-28 rounded-full object-cover mx-auto border-4 border-gray-200"></div>
         <input type="file" id="logoUploadInput" accept="image/*" class="w-full border p-2 rounded-lg mb-3">
         <input type="text" id="logoUrlInput" placeholder="Or paste image URL" class="w-full border p-3 rounded-lg mb-3">
-        <button id="saveLogoBtn" class="w-full bg-purple-600 text-white py-3 rounded-lg font-bold">Update Logo</button>
+        <button id="saveLogoBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-bold transition">Update Logo</button>
         <button id="closeLogoModalBtn" class="w-full mt-2 text-gray-500 py-2">Cancel</button>
     </div>
 </div>
 
+<!-- Social Links Modal (Admin only) -->
 <div id="socialLinksModal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay p-4">
     <div class="bg-white rounded-2xl w-full max-w-md p-6">
         <h3 class="text-xl font-bold mb-4">Update Social Links</h3>
         <input type="text" id="whatsappGroupLink" placeholder="WhatsApp Group Link" class="w-full border p-3 rounded-lg mb-3">
         <input type="text" id="facebookPageLink" placeholder="Facebook Page Link" class="w-full border p-3 rounded-lg mb-4">
-        <button id="saveSocialLinksBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">Save Social Links</button>
+        <button id="saveSocialLinksBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition">Save Social Links</button>
         <button id="closeSocialLinksModalBtn" class="w-full mt-2 text-gray-500 py-2">Cancel</button>
     </div>
 </div>
