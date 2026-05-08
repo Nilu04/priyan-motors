@@ -1,0 +1,106 @@
+/* styles.css - Shared Styles */
+* {
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.main-content {
+    flex: 1 0 auto;
+}
+
+footer {
+    flex-shrink: 0;
+    background: black;
+    color: #9ca3af;
+    text-align: center;
+    padding: 20px;
+    margin-top: auto;
+}
+
+.active-page {
+    color: #00BFFF;
+    border-bottom: 3px solid #00BFFF;
+    font-weight: 700;
+}
+
+.modal-overlay {
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(5px);
+}
+
+.bike-img {
+    aspect-ratio: 4/3;
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.sold-img {
+    aspect-ratio: 4/3;
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.filter-chip.active-filter {
+    background-color: #00BFFF;
+    color: white;
+    border-color: #00BFFF;
+}
+
+@media (max-width: 640px) {
+    .bike-img, .sold-img {
+        height: 150px;
+    }
+}
+
+.toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    z-index: 10000;
+    animation: fadeInOut 3s ease;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.logo-clickable {
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+.logo-clickable:hover {
+    transform: scale(1.05);
+    opacity: 0.9;
+}
+
+button {
+    cursor: pointer;
+}
+
+.bike-card, .sold-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.bike-card:hover, .sold-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
