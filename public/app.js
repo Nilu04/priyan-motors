@@ -1,4 +1,4 @@
-// app.js - Complete Working Version with All Features
+// app.js - Complete Working Version - FINAL FIX
 const API_URL = '';
 let token = localStorage.getItem('token');
 let currentUser = null;
@@ -9,7 +9,7 @@ let socialLinks = { whatsapp_group: '', facebook_page: '' };
 let comments = {};
 let feedbacks = {};
 
-// Load comments and feedbacks from localStorage (visible to all customers)
+// Load comments and feedbacks from localStorage
 function loadComments() {
     const saved = localStorage.getItem('bikeComments');
     if (saved) {
@@ -119,7 +119,6 @@ function closeAllModals() {
     });
 }
 
-// Close modal function for HTML buttons
 window.closeModal = function() {
     closeAllModals();
 };
@@ -218,6 +217,35 @@ window.markAsSold = async function(bikeId) {
     }
 };
 
+// ============= ADD BIKE AND ADD SOLD FUNCTIONS =============
+window.openAddBikeModal = function() {
+    document.getElementById('modalTitle').innerText = 'Add New Bike';
+    document.getElementById('editBikeId').value = '';
+    document.getElementById('bikeName').value = '';
+    document.getElementById('bikePrice').value = '';
+    document.getElementById('bikeYear').value = '';
+    document.getElementById('bikeKm').value = '';
+    document.getElementById('bikeLocation').value = '';
+    document.getElementById('bikeBrand').value = '';
+    document.getElementById('bikeImageUrl').value = '';
+    document.getElementById('bikeImageUpload').value = '';
+    document.getElementById('bikeImagePreview').classList.add('hidden');
+    document.getElementById('editBikeModal').classList.remove('hidden');
+};
+
+window.openAddSoldModal = function() {
+    document.getElementById('soldModalTitle').innerText = 'Add Sold Entry';
+    document.getElementById('editSoldId').value = '';
+    document.getElementById('soldName').value = '';
+    document.getElementById('soldPrice').value = '';
+    document.getElementById('soldMonthYear').value = '';
+    document.getElementById('soldBuyer').value = '';
+    document.getElementById('soldImageUrl').value = '';
+    document.getElementById('soldImageUpload').value = '';
+    document.getElementById('soldImagePreview').classList.add('hidden');
+    document.getElementById('editSoldModal').classList.remove('hidden');
+};
+
 // ============= DETAILS MODAL FUNCTIONS =============
 window.showBikeDetails = function(bikeId) {
     const bike = bikes.find(b => b._id === bikeId);
@@ -276,7 +304,7 @@ window.showBikeDetails = function(bikeId) {
                 <div class="bg-gray-50 p-3 rounded-lg"><p class="text-gray-500 text-sm">🕐 Added On</p><p class="text-lg font-semibold">${new Date(bike.created_at).toLocaleDateString()}</p></div>
             </div>
             
-            <!-- Comments Section - Visible to all customers -->
+            <!-- Comments Section -->
             <div class="mt-6 border-t pt-4">
                 <h3 class="text-lg font-bold mb-3">💬 Comments & Questions</h3>
                 <div class="mb-4">
@@ -342,7 +370,7 @@ window.submitReply = function(bikeId, commentId) {
 
 window.deleteComment = deleteComment;
 
-// ============= SOLD DETAILS WITH FEEDBACK (Visible to all customers) =============
+// ============= SOLD DETAILS WITH FEEDBACK =============
 window.showSoldDetails = function(soldId) {
     const sold = soldList.find(s => s._id === soldId);
     if (!sold) return;
@@ -383,7 +411,7 @@ window.showSoldDetails = function(soldId) {
                 <div class="bg-gray-50 p-3 rounded-lg"><p class="text-gray-500 text-sm">🕐 Recorded On</p><p class="text-lg font-semibold">${new Date(sold.created_at).toLocaleDateString()}</p></div>
             </div>
             
-            <!-- Customer Feedback Section - Visible to all customers -->
+            <!-- Customer Feedback Section -->
             <div class="mt-6 border-t pt-4">
                 <h3 class="text-lg font-bold mb-3">⭐ Customer Feedback</h3>
                 <div class="mb-4">
@@ -457,7 +485,6 @@ window.submitFeedback = function(soldId) {
     addFeedback(soldId, rating, comment, userName);
     document.getElementById(`selected-rating-${soldId}`).value = 0;
     document.getElementById(`feedback-comment-${soldId}`).value = '';
-    // Reset stars
     for (let i = 1; i <= 5; i++) {
         const star = document.querySelector(`#rating-stars-${soldId} i[data-rating="${i}"]`);
         if (star) {
@@ -467,7 +494,7 @@ window.submitFeedback = function(soldId) {
     }
 };
 
-// ============= PAGE TEMPLATES =============
+// ============= PAGE TEMPLATES WITH BUTTONS =============
 const templates = {
     home: () => `
         <header class="hero-gradient min-h-[75vh] flex items-center justify-center text-center text-white">
@@ -484,7 +511,10 @@ const templates = {
     
     bikes: () => `
         <div class="container mx-auto px-4 py-8">
-            <div class="flex justify-between items-center mb-6 flex-wrap gap-3"><div><h1 class="text-3xl md:text-4xl font-black">🔥 Available Motorcycles</h1><p class="text-gray-600">Click on any bike to view details, comment, or inquire</p></div>${token ? `<button id="addNewBikeBtn" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold transition"><i class="fas fa-plus"></i> Add New Bike</button>` : ''}</div>
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+                <div><h1 class="text-3xl md:text-4xl font-black">🔥 Available Motorcycles</h1><p class="text-gray-600">Click on any bike to view details, comment, or inquire</p></div>
+                ${token ? `<button onclick="window.openAddBikeModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold transition"><i class="fas fa-plus"></i> Add New Bike</button>` : ''}
+            </div>
             <div class="flex gap-2 mb-6 flex-wrap"><button data-filter="all" class="filter-chip active-filter px-4 py-2 rounded-full border bg-white hover:bg-gray-50 transition">All Bikes</button><button data-filter="price-desc" class="filter-chip px-4 py-2 rounded-full border bg-white hover:bg-gray-50 transition">Price High-Low</button><button data-filter="price-asc" class="filter-chip px-4 py-2 rounded-full border bg-white hover:bg-gray-50 transition">Price Low-High</button></div>
             <div id="bikesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </div>
@@ -492,7 +522,10 @@ const templates = {
     
     sold: () => `
         <div class="container mx-auto px-4 py-8">
-            <div class="flex justify-between items-center mb-6 flex-wrap gap-3"><div><h1 class="text-3xl md:text-4xl font-black">✅ Recently Sold Bikes</h1><p class="text-gray-500">Click on any sold bike to view details and leave feedback</p></div>${token ? `<button id="addSoldEntryBtn" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold transition"><i class="fas fa-plus"></i> Add Sold Entry</button>` : ''}</div>
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+                <div><h1 class="text-3xl md:text-4xl font-black">✅ Recently Sold Bikes</h1><p class="text-gray-500">Click on any sold bike to view details and leave feedback</p></div>
+                ${token ? `<button onclick="window.openAddSoldModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold transition"><i class="fas fa-plus"></i> Add Sold Entry</button>` : ''}
+            </div>
             <div id="soldGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </div>
     `,
@@ -554,35 +587,17 @@ window.navigateTo = function(page) {
         pageContent.innerHTML = templates[page]();
     }
     
-    if (page === 'bikes') {
-        loadBikes();
-        // Attach add bike button event after content loads
-        setTimeout(() => {
-            const addBtn = document.getElementById('addNewBikeBtn');
-            if (addBtn) {
-                addBtn.onclick = function() { window.openAddBikeModal(); };
-            }
-        }, 100);
-    }
-    if (page === 'sold') {
-        loadSold();
-        // Attach add sold button event after content loads
-        setTimeout(() => {
-            const addBtn = document.getElementById('addSoldEntryBtn');
-            if (addBtn) {
-                addBtn.onclick = function() { window.openAddSoldModal(); };
-            }
-        }, 100);
-    }
+    if (page === 'bikes') loadBikes();
+    if (page === 'sold') loadSold();
     if (page === 'contact') {
         loadSocialLinks();
         setTimeout(() => {
             const editBtn = document.getElementById('editSocialLinksBtn');
             if (editBtn) {
-                editBtn.addEventListener('click', () => {
+                editBtn.onclick = () => {
                     document.getElementById('socialLinksModal').classList.remove('hidden');
                     loadSocialLinksToModal();
-                });
+                };
             }
         }, 100);
     }
@@ -739,34 +754,6 @@ window.deleteSold = async (id) => {
     } else {
         showToast('Failed to delete sold entry', true);
     }
-};
-
-window.openAddBikeModal = () => {
-    document.getElementById('modalTitle').innerText = 'Add New Bike';
-    document.getElementById('editBikeId').value = '';
-    document.getElementById('bikeName').value = '';
-    document.getElementById('bikePrice').value = '';
-    document.getElementById('bikeYear').value = '';
-    document.getElementById('bikeKm').value = '';
-    document.getElementById('bikeLocation').value = '';
-    document.getElementById('bikeBrand').value = '';
-    document.getElementById('bikeImageUrl').value = '';
-    document.getElementById('bikeImageUpload').value = '';
-    document.getElementById('bikeImagePreview').classList.add('hidden');
-    document.getElementById('editBikeModal').classList.remove('hidden');
-};
-
-window.openAddSoldModal = () => {
-    document.getElementById('soldModalTitle').innerText = 'Add Sold Entry';
-    document.getElementById('editSoldId').value = '';
-    document.getElementById('soldName').value = '';
-    document.getElementById('soldPrice').value = '';
-    document.getElementById('soldMonthYear').value = '';
-    document.getElementById('soldBuyer').value = '';
-    document.getElementById('soldImageUrl').value = '';
-    document.getElementById('soldImageUpload').value = '';
-    document.getElementById('soldImagePreview').classList.add('hidden');
-    document.getElementById('editSoldModal').classList.remove('hidden');
 };
 
 // ============= SAVE HANDLERS =============
