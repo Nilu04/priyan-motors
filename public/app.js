@@ -1,4 +1,4 @@
-// app.js - Complete Working Frontend with Edit Functions
+// app.js - Complete Working Version with Edit Functions and Proper Permissions
 const API_URL = '';
 let token = localStorage.getItem('token');
 let currentUser = null;
@@ -71,7 +71,7 @@ async function apiCall(endpoint, options = {}) {
     }
 }
 
-// ============= COMMENTS API =============
+// ============= COMMENTS API (Everyone can add, only admin can delete) =============
 async function loadComments(bikeId) {
     const response = await apiCall(`/api/comments/${bikeId}`);
     if (response && response.ok) {
@@ -104,9 +104,10 @@ async function addReply(commentId, text, userName) {
     return false;
 }
 
+// Only admin can delete comments
 async function deleteComment(commentId) {
     if (!token) {
-        showToast('Please login as admin to delete comments', true);
+        showToast('Only admin can delete comments', true);
         return false;
     }
     if (!confirm('Delete this comment?')) return false;
@@ -118,7 +119,7 @@ async function deleteComment(commentId) {
     return false;
 }
 
-// ============= FEEDBACK API =============
+// ============= FEEDBACK API (Everyone can add, only admin can delete) =============
 async function loadFeedbacks(soldId) {
     const response = await apiCall(`/api/feedbacks/${soldId}`);
     if (response && response.ok) {
@@ -139,9 +140,10 @@ async function addFeedback(soldId, rating, comment, userName) {
     return false;
 }
 
+// Only admin can delete feedbacks
 async function deleteFeedback(feedbackId) {
     if (!token) {
-        showToast('Please login as admin to delete feedback', true);
+        showToast('Only admin can delete feedback', true);
         return false;
     }
     if (!confirm('Delete this feedback?')) return false;
@@ -294,8 +296,8 @@ window.showBikeDetails = async function(bikeId) {
             <div class="mt-6 flex gap-3 flex-wrap">
                 <a href="https://wa.me/94753503111?text=I'm%20interested%20in%20${encodeURIComponent(bike.name)}%20(${bike.price})" target="_blank" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-center py-2 rounded-lg transition"><i class="fab fa-whatsapp"></i> Inquire Now on WhatsApp</a>
                 ${token ? `
-                    <button onclick="window.editBike('${bike._id}'); window.closeModal();" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg transition"><i class="fas fa-edit"></i> Edit Bike</button>
-                    <button onclick="window.deleteBike('${bike._id}'); window.closeModal();" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition"><i class="fas fa-trash"></i> Delete Bike</button>
+                    <button onclick="window.editBike('${bike._id}')" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg transition"><i class="fas fa-edit"></i> Edit Bike</button>
+                    <button onclick="window.deleteBike('${bike._id}')" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition"><i class="fas fa-trash"></i> Delete Bike</button>
                 ` : ''}
                 <button onclick="window.markAsSold('${bike._id}')" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg transition"><i class="fas fa-tag"></i> Mark as Sold</button>
                 <button onclick="window.closeModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 py-2 rounded-lg transition">Close</button>
@@ -323,7 +325,7 @@ window.submitCommentAndRefresh = async function(bikeId) {
     const userName = token && currentUser ? currentUser.username : 'Customer';
     await addComment(bikeId, commentText, userName);
     input.value = '';
-    await showBikeDetails(bikeId);
+    await window.showBikeDetails(bikeId);
 };
 
 window.showReplyForm = function(commentId) {
@@ -340,13 +342,13 @@ window.submitReplyAndRefresh = async function(commentId, bikeId) {
     await addReply(commentId, replyText, userName);
     input.value = '';
     document.getElementById(`reply-form-${commentId}`).classList.add('hidden');
-    await showBikeDetails(bikeId);
+    await window.showBikeDetails(bikeId);
 };
 
 window.deleteAndRefreshComment = async function(commentId, bikeId) {
     const success = await deleteComment(commentId);
     if (success) {
-        await showBikeDetails(bikeId);
+        await window.showBikeDetails(bikeId);
     }
 };
 
@@ -414,8 +416,8 @@ window.showSoldDetails = async function(soldId) {
             
             <div class="mt-6 flex gap-3">
                 ${token ? `
-                    <button onclick="window.editSold('${sold._id}'); window.closeModal();" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg transition"><i class="fas fa-edit"></i> Edit Entry</button>
-                    <button onclick="window.deleteSold('${sold._id}'); window.closeModal();" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition"><i class="fas fa-trash"></i> Delete Entry</button>
+                    <button onclick="window.editSold('${sold._id}')" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg transition"><i class="fas fa-edit"></i> Edit Entry</button>
+                    <button onclick="window.deleteSold('${sold._id}')" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition"><i class="fas fa-trash"></i> Delete Entry</button>
                 ` : ''}
                 <button onclick="window.closeModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 py-2 rounded-lg transition">Close</button>
             </div>
@@ -477,89 +479,14 @@ window.submitFeedbackAndRefresh = async function(soldId) {
             star.classList.add('text-gray-300');
         }
     }
-    await showSoldDetails(soldId);
+    await window.showSoldDetails(soldId);
 };
 
 window.deleteAndRefreshFeedback = async function(feedbackId, soldId) {
     const success = await deleteFeedback(feedbackId);
     if (success) {
-        await showSoldDetails(soldId);
+        await window.showSoldDetails(soldId);
     }
-};
-
-// ============= PAGE TEMPLATES =============
-const templates = {
-    home: () => `
-        <header class="hero-gradient min-h-[75vh] flex items-center justify-center text-center text-white">
-            <div class="container mx-auto px-4 py-8">
-                <span class="inline-block bg-blue-600/80 px-4 py-1 rounded-full text-sm font-bold mb-4">#RideTheExtraordinary</span>
-                <h1 class="text-4xl md:text-7xl font-black mb-4">Own Your <span class="text-blue-400">Dream Machine</span></h1>
-                <p class="text-base md:text-2xl text-gray-200 max-w-3xl mx-auto mb-6">Premium new & used motorcycles | Main Street, Kiran, Batticaloa</p>
-                <div class="flex justify-center gap-4 flex-wrap"><button onclick="window.navigateTo('bikes')" class="bg-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition">Explore Bikes</button><button onclick="window.navigateTo('exchange')" class="bg-transparent border-2 border-white px-6 py-3 rounded-xl font-bold hover:bg-green-600 transition">Sell Your Bike</button></div>
-                <div class="grid grid-cols-3 gap-4 mt-10 max-w-3xl mx-auto"><div class="bg-white/10 rounded-2xl p-3"><div class="text-2xl font-black text-blue-400">500+</div><div class="text-xs">Bikes Sold</div></div><div class="bg-white/10 rounded-2xl p-3"><div class="text-2xl font-black text-blue-400">100%</div><div class="text-xs">Trust</div></div><div class="bg-white/10 rounded-2xl p-3"><div class="text-2xl font-black text-blue-400">24/7</div><div class="text-xs">Support</div></div></div>
-            </div>
-        </header>
-        <section class="py-16 bg-white text-center"><h2 class="text-3xl font-bold mb-8">Why Choose <span class="text-blue-600">Mr. Priyan Motors?</span></h2><div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4"><div><i class="fas fa-shield-alt text-blue-600 text-4xl"></i><h3 class="font-bold text-xl mt-2">Trusted Dealer</h3><p class="text-gray-600">Since 2021</p></div><div><i class="fas fa-hand-holding-usd text-blue-600 text-4xl"></i><h3 class="font-bold text-xl mt-2">Best Exchange</h3><p class="text-gray-600">Instant valuation</p></div><div><i class="fas fa-file-signature text-blue-600 text-4xl"></i><h3 class="font-bold text-xl mt-2">Hassle-free Docs</h3><p class="text-gray-600">Full support</p></div></div></section>
-    `,
-    
-    bikes: () => `
-        <div class="container mx-auto px-4 py-8">
-            <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
-                <div><h1 class="text-3xl md:text-4xl font-black">🔥 Available Motorcycles</h1><p class="text-gray-600">Click on any bike to view details</p></div>
-                ${token ? `<button onclick="window.openAddBikeModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold transition"><i class="fas fa-plus"></i> Add New Bike</button>` : ''}
-            </div>
-            <div class="flex gap-2 mb-6 flex-wrap"><button data-filter="all" class="filter-chip active-filter px-4 py-2 rounded-full border bg-white hover:bg-gray-50 transition">All Bikes</button><button data-filter="price-desc" class="filter-chip px-4 py-2 rounded-full border bg-white hover:bg-gray-50 transition">Price High-Low</button><button data-filter="price-asc" class="filter-chip px-4 py-2 rounded-full border bg-white hover:bg-gray-50 transition">Price Low-High</button></div>
-            <div id="bikesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-        </div>
-    `,
-    
-    sold: () => `
-        <div class="container mx-auto px-4 py-8">
-            <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
-                <div><h1 class="text-3xl md:text-4xl font-black">✅ Recently Sold Bikes</h1><p class="text-gray-500">Click on any sold bike to view details</p></div>
-                ${token ? `<button onclick="window.openAddSoldModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold transition"><i class="fas fa-plus"></i> Add Sold Entry</button>` : ''}
-            </div>
-            <div id="soldGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-        </div>
-    `,
-    
-    exchange: () => `
-        <div class="container mx-auto px-4 py-16 max-w-5xl text-center">
-            <i class="fas fa-hand-holding-usd text-blue-600 text-5xl mb-4"></i>
-            <h1 class="text-3xl md:text-5xl font-black">💰 Sell Your Bike Instantly</h1>
-            <p class="text-xl text-gray-700 mt-3">Best Exchange Offers | Free Valuation | Instant Cash</p>
-            <p class="text-lg text-gray-600 mt-2">Call or WhatsApp: <strong class="text-blue-600">075 350 3111</strong></p>
-            <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition"><i class="fab fa-whatsapp text-green-600 text-5xl"></i><h2 class="text-2xl font-bold mt-4">WhatsApp Valuation</h2><p class="text-gray-600 mt-2">Send bike details & photos for instant quote</p><a href="https://wa.me/94753503111" class="inline-block mt-6 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full font-bold transition"><i class="fab fa-whatsapp mr-2"></i> Start Chat</a></div>
-                <div class="bg-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition"><i class="fas fa-phone-alt text-blue-600 text-5xl"></i><h2 class="text-2xl font-bold mt-4">Call for Exchange</h2><p class="text-gray-600 mt-2">Upgrade your bike with best buy-back offer</p><a href="tel:0753503111" class="inline-block mt-6 bg-black hover:bg-gray-800 text-white px-8 py-3 rounded-full font-bold transition"><i class="fas fa-phone mr-2"></i> Call Now</a></div>
-            </div>
-            <div class="mt-16 bg-blue-50 rounded-2xl p-6 text-left"><h3 class="text-xl font-bold mb-3">📋 How It Works</h3><div class="grid md:grid-cols-3 gap-4 text-sm"><div class="flex gap-2"><span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">1</span> Share bike details & photos</div><div class="flex gap-2"><span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">2</span> Get instant valuation</div><div class="flex gap-2"><span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">3</span> Cash payment or exchange</div></div></div>
-        </div>
-    `,
-    
-    contact: () => `
-        <div class="container mx-auto px-4 py-12">
-            <div class="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
-                <div>
-                    <h1 class="text-3xl md:text-5xl font-black mb-6">Visit Our <span class="text-blue-600">Showroom</span></h1>
-                    <div class="space-y-6 text-lg">
-                        <div class="flex items-start gap-4"><i class="fas fa-map-marker-alt text-blue-600 text-2xl mt-1"></i><div><p class="font-semibold">Address</p><p class="text-gray-600">Main Street, Kiran, Batticaloa, Sri Lanka</p></div></div>
-                        <div class="flex items-start gap-4"><i class="fas fa-phone-alt text-blue-600 text-2xl mt-1"></i><div><p class="font-semibold">Phone / WhatsApp</p><p class="text-gray-600">075 350 3111</p></div></div>
-                        <div class="flex items-start gap-4"><i class="fas fa-clock text-blue-600 text-2xl mt-1"></i><div><p class="font-semibold">Business Hours</p><p class="text-gray-600">Monday - Sunday: 9:00 AM - 8:00 PM</p></div></div>
-                        <div class="flex items-start gap-4"><i class="fas fa-envelope text-blue-600 text-2xl mt-1"></i><div><p class="font-semibold">Email</p><p class="text-gray-600">info@priyanmotors.lk</p></div></div>
-                    </div>
-                    <div class="mt-8 flex gap-4 flex-wrap">
-                        <a href="https://wa.me/94753503111" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold transition"><i class="fab fa-whatsapp mr-2"></i> WhatsApp Us</a>
-                        <a href="${socialLinks.whatsapp_group || 'https://chat.whatsapp.com/yourinvitecode'}" target="_blank" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-bold transition"><i class="fab fa-whatsapp mr-2"></i> Join WhatsApp Group</a>
-                        <a href="${socialLinks.facebook_page || 'https://facebook.com/yourpage'}" target="_blank" class="bg-blue-800 hover:bg-blue-900 text-white px-6 py-3 rounded-xl font-bold transition"><i class="fab fa-facebook mr-2"></i> Follow on Facebook</a>
-                        <a href="tel:0753503111" class="bg-black hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-bold transition"><i class="fas fa-phone mr-2"></i> Call Now</a>
-                    </div>
-                    ${token ? `<button id="editSocialLinksBtn" class="mt-6 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-edit"></i> Edit Social Links (Admin)</button>` : ''}
-                </div>
-                <div class="bg-gray-200 rounded-2xl h-80 flex flex-col items-center justify-center"><i class="fas fa-map-marked-alt text-4xl text-gray-500 mb-3"></i><p class="text-gray-600 text-center px-4">📍 Main Street, Kiran<br>Batticaloa, Sri Lanka</p><p class="text-xs text-gray-500 mt-2">Google Map location available</p></div>
-            </div>
-        </div>
-    `
 };
 
 // ============= EDIT FUNCTIONS =============
@@ -594,6 +521,10 @@ window.editBike = function(id) {
 };
 
 window.deleteBike = async function(id) {
+    if (!token) {
+        showToast('Please login as admin to delete bikes', true);
+        return;
+    }
     if (!confirm('Are you sure you want to delete this bike?')) return;
     const response = await apiCall(`/api/bikes/${id}`, { method: 'DELETE' });
     if (response && response.ok) {
@@ -634,6 +565,10 @@ window.editSold = function(id) {
 };
 
 window.deleteSold = async function(id) {
+    if (!token) {
+        showToast('Please login as admin to delete sold entries', true);
+        return;
+    }
     if (!confirm('Are you sure you want to remove this sold record?')) return;
     const response = await apiCall(`/api/sold/${id}`, { method: 'DELETE' });
     if (response && response.ok) {
@@ -776,6 +711,81 @@ document.getElementById('saveSocialLinksBtn')?.addEventListener('click', async (
         }
     }
 });
+
+// ============= PAGE TEMPLATES =============
+const templates = {
+    home: () => `
+        <header class="hero-gradient min-h-[75vh] flex items-center justify-center text-center text-white">
+            <div class="container mx-auto px-4 py-8">
+                <span class="inline-block bg-blue-600/80 px-4 py-1 rounded-full text-sm font-bold mb-4">#RideTheExtraordinary</span>
+                <h1 class="text-4xl md:text-7xl font-black mb-4">Own Your <span class="text-blue-400">Dream Machine</span></h1>
+                <p class="text-base md:text-2xl text-gray-200 max-w-3xl mx-auto mb-6">Premium new & used motorcycles | Main Street, Kiran, Batticaloa</p>
+                <div class="flex justify-center gap-4 flex-wrap"><button onclick="window.navigateTo('bikes')" class="bg-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition">Explore Bikes</button><button onclick="window.navigateTo('exchange')" class="bg-transparent border-2 border-white px-6 py-3 rounded-xl font-bold hover:bg-green-600 transition">Sell Your Bike</button></div>
+                <div class="grid grid-cols-3 gap-4 mt-10 max-w-3xl mx-auto"><div class="bg-white/10 rounded-2xl p-3"><div class="text-2xl font-black text-blue-400">500+</div><div class="text-xs">Bikes Sold</div></div><div class="bg-white/10 rounded-2xl p-3"><div class="text-2xl font-black text-blue-400">100%</div><div class="text-xs">Trust</div></div><div class="bg-white/10 rounded-2xl p-3"><div class="text-2xl font-black text-blue-400">24/7</div><div class="text-xs">Support</div></div></div>
+            </div>
+        </header>
+        <section class="py-16 bg-white text-center"><h2 class="text-3xl font-bold mb-8">Why Choose <span class="text-blue-600">Mr. Priyan Motors?</span></h2><div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4"><div><i class="fas fa-shield-alt text-blue-600 text-4xl"></i><h3 class="font-bold text-xl mt-2">Trusted Dealer</h3><p class="text-gray-600">Since 2021</p></div><div><i class="fas fa-hand-holding-usd text-blue-600 text-4xl"></i><h3 class="font-bold text-xl mt-2">Best Exchange</h3><p class="text-gray-600">Instant valuation</p></div><div><i class="fas fa-file-signature text-blue-600 text-4xl"></i><h3 class="font-bold text-xl mt-2">Hassle-free Docs</h3><p class="text-gray-600">Full support</p></div></div></section>
+    `,
+    
+    bikes: () => `
+        <div class="container mx-auto px-4 py-8">
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+                <div><h1 class="text-3xl md:text-4xl font-black">🔥 Available Motorcycles</h1><p class="text-gray-600">Click on any bike to view details</p></div>
+                ${token ? `<button onclick="window.openAddBikeModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold transition"><i class="fas fa-plus"></i> Add New Bike</button>` : ''}
+            </div>
+            <div class="flex gap-2 mb-6 flex-wrap"><button data-filter="all" class="filter-chip active-filter px-4 py-2 rounded-full border bg-white hover:bg-gray-50 transition">All Bikes</button><button data-filter="price-desc" class="filter-chip px-4 py-2 rounded-full border bg-white hover:bg-gray-50 transition">Price High-Low</button><button data-filter="price-asc" class="filter-chip px-4 py-2 rounded-full border bg-white hover:bg-gray-50 transition">Price Low-High</button></div>
+            <div id="bikesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+    `,
+    
+    sold: () => `
+        <div class="container mx-auto px-4 py-8">
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+                <div><h1 class="text-3xl md:text-4xl font-black">✅ Recently Sold Bikes</h1><p class="text-gray-500">Click on any sold bike to view details</p></div>
+                ${token ? `<button onclick="window.openAddSoldModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold transition"><i class="fas fa-plus"></i> Add Sold Entry</button>` : ''}
+            </div>
+            <div id="soldGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+    `,
+    
+    exchange: () => `
+        <div class="container mx-auto px-4 py-16 max-w-5xl text-center">
+            <i class="fas fa-hand-holding-usd text-blue-600 text-5xl mb-4"></i>
+            <h1 class="text-3xl md:text-5xl font-black">💰 Sell Your Bike Instantly</h1>
+            <p class="text-xl text-gray-700 mt-3">Best Exchange Offers | Free Valuation | Instant Cash</p>
+            <p class="text-lg text-gray-600 mt-2">Call or WhatsApp: <strong class="text-blue-600">075 350 3111</strong></p>
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition"><i class="fab fa-whatsapp text-green-600 text-5xl"></i><h2 class="text-2xl font-bold mt-4">WhatsApp Valuation</h2><p class="text-gray-600 mt-2">Send bike details & photos for instant quote</p><a href="https://wa.me/94753503111" class="inline-block mt-6 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full font-bold transition"><i class="fab fa-whatsapp mr-2"></i> Start Chat</a></div>
+                <div class="bg-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition"><i class="fas fa-phone-alt text-blue-600 text-5xl"></i><h2 class="text-2xl font-bold mt-4">Call for Exchange</h2><p class="text-gray-600 mt-2">Upgrade your bike with best buy-back offer</p><a href="tel:0753503111" class="inline-block mt-6 bg-black hover:bg-gray-800 text-white px-8 py-3 rounded-full font-bold transition"><i class="fas fa-phone mr-2"></i> Call Now</a></div>
+            </div>
+            <div class="mt-16 bg-blue-50 rounded-2xl p-6 text-left"><h3 class="text-xl font-bold mb-3">📋 How It Works</h3><div class="grid md:grid-cols-3 gap-4 text-sm"><div class="flex gap-2"><span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">1</span> Share bike details & photos</div><div class="flex gap-2"><span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">2</span> Get instant valuation</div><div class="flex gap-2"><span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">3</span> Cash payment or exchange</div></div></div>
+        </div>
+    `,
+    
+    contact: () => `
+        <div class="container mx-auto px-4 py-12">
+            <div class="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
+                <div>
+                    <h1 class="text-3xl md:text-5xl font-black mb-6">Visit Our <span class="text-blue-600">Showroom</span></h1>
+                    <div class="space-y-6 text-lg">
+                        <div class="flex items-start gap-4"><i class="fas fa-map-marker-alt text-blue-600 text-2xl mt-1"></i><div><p class="font-semibold">Address</p><p class="text-gray-600">Main Street, Kiran, Batticaloa, Sri Lanka</p></div></div>
+                        <div class="flex items-start gap-4"><i class="fas fa-phone-alt text-blue-600 text-2xl mt-1"></i><div><p class="font-semibold">Phone / WhatsApp</p><p class="text-gray-600">075 350 3111</p></div></div>
+                        <div class="flex items-start gap-4"><i class="fas fa-clock text-blue-600 text-2xl mt-1"></i><div><p class="font-semibold">Business Hours</p><p class="text-gray-600">Monday - Sunday: 9:00 AM - 8:00 PM</p></div></div>
+                        <div class="flex items-start gap-4"><i class="fas fa-envelope text-blue-600 text-2xl mt-1"></i><div><p class="font-semibold">Email</p><p class="text-gray-600">info@priyanmotors.lk</p></div></div>
+                    </div>
+                    <div class="mt-8 flex gap-4 flex-wrap">
+                        <a href="https://wa.me/94753503111" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold transition"><i class="fab fa-whatsapp mr-2"></i> WhatsApp Us</a>
+                        <a href="${socialLinks.whatsapp_group || 'https://chat.whatsapp.com/yourinvitecode'}" target="_blank" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-bold transition"><i class="fab fa-whatsapp mr-2"></i> Join WhatsApp Group</a>
+                        <a href="${socialLinks.facebook_page || 'https://facebook.com/yourpage'}" target="_blank" class="bg-blue-800 hover:bg-blue-900 text-white px-6 py-3 rounded-xl font-bold transition"><i class="fab fa-facebook mr-2"></i> Follow on Facebook</a>
+                        <a href="tel:0753503111" class="bg-black hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-bold transition"><i class="fas fa-phone mr-2"></i> Call Now</a>
+                    </div>
+                    ${token ? `<button id="editSocialLinksBtn" class="mt-6 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition"><i class="fas fa-edit"></i> Edit Social Links (Admin)</button>` : ''}
+                </div>
+                <div class="bg-gray-200 rounded-2xl h-80 flex flex-col items-center justify-center"><i class="fas fa-map-marked-alt text-4xl text-gray-500 mb-3"></i><p class="text-gray-600 text-center px-4">📍 Main Street, Kiran<br>Batticaloa, Sri Lanka</p><p class="text-xs text-gray-500 mt-2">Google Map location available</p></div>
+            </div>
+        </div>
+    `
+};
 
 // ============= NAVIGATION =============
 window.navigateTo = function(page) {
