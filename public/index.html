@@ -9,6 +9,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300,400,500,600,700,800,900&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Inter', sans-serif; }
+        body { 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh; 
+            margin: 0;
+        }
+        .main-content { 
+            flex: 1 0 auto; 
+        }
+        footer { 
+            flex-shrink: 0; 
+            background: black; 
+            color: #9ca3af; 
+            text-align: center; 
+            padding: 20px; 
+            margin-top: auto;
+        }
         .hero-gradient { background: linear-gradient(125deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.65) 100%), url('https://images.unsplash.com/photo-1558981403-c5f9899a28bc?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'); background-size: cover; background-position: center 35%; }
         .active-page { color: #00BFFF; border-bottom: 3px solid #00BFFF; font-weight: 700; }
         .modal-overlay { background: rgba(0,0,0,0.75); backdrop-filter: blur(5px); }
@@ -20,9 +37,15 @@
         .logo-clickable { cursor: pointer; transition: transform 0.2s, opacity 0.2s; }
         .logo-clickable:hover { transform: scale(1.05); opacity: 0.9; }
         button { cursor: pointer; }
+        .btn-primary { background-color: #2563eb; color: white; padding: 8px 16px; border-radius: 8px; transition: background 0.2s; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+        .btn-danger { background-color: #dc2626; color: white; padding: 8px 16px; border-radius: 8px; transition: background 0.2s; }
+        .btn-danger:hover { background-color: #b91c1c; }
+        .btn-warning { background-color: #eab308; color: white; padding: 8px 16px; border-radius: 8px; transition: background 0.2s; }
+        .btn-warning:hover { background-color: #ca8a04; }
     </style>
 </head>
-<body class="bg-gray-50">
+<body>
 
 <!-- Navigation Bar -->
 <nav class="bg-white shadow-md sticky top-0 z-50 border-b border-gray-200">
@@ -50,10 +73,15 @@
                         <i class="fas fa-chevron-down text-xs"></i>
                     </button>
                     <div id="accountDropdown" class="absolute right-0 mt-3 w-64 bg-white rounded-xl shadow-xl border border-gray-200 hidden z-50">
-                        <div class="p-3 border-b flex items-center gap-3">
-                            <i class="fas fa-user-circle text-2xl text-gray-400"></i>
-                            <div><p class="font-semibold" id="dropdownUserName">Guest User</p><p class="text-xs text-gray-400" id="dropdownUserRole">View Only Mode</p></div>
+                        <div class="p-3 border-b">
+                            <p class="font-semibold" id="dropdownUserName">Guest User</p>
+                            <p class="text-xs text-gray-400" id="dropdownUserRole">View Only Mode</p>
                         </div>
+                        <a href="#" id="settingsMenuItem" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50"><i class="fas fa-sliders-h w-5"></i> Settings</a>
+                        <a href="#" id="changePasswordMenuItem" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50"><i class="fas fa-key w-5"></i> Change Password</a>
+                        <a href="#" id="changeUsernameMenuItem" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50"><i class="fas fa-user-edit w-5"></i> Change Username</a>
+                        <a href="#" id="editLogoMenuItem" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 text-purple-600"><i class="fas fa-image w-5"></i> Update Website Logo</a>
+                        <hr class="my-1">
                         <a href="#" id="showLoginOption" class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 text-blue-600"><i class="fas fa-sign-in-alt w-5"></i> Admin Login</a>
                         <a href="#" id="logoutBtn" class="flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 hidden"><i class="fas fa-sign-out-alt w-5"></i> Logout</a>
                     </div>
@@ -74,8 +102,12 @@
 <!-- Page Content -->
 <div id="pageContent" class="main-content"></div>
 
-<footer class="bg-black text-gray-400 py-5 text-center text-sm mt-auto"><p>&copy; 2025 Mr. Priyan Motors – Batticaloa. All Rights Reserved.</p></footer>
-<a href="https://wa.me/94753503111" class="fixed bottom-5 right-5 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-2xl z-50"><i class="fab fa-whatsapp"></i></a>
+<footer>
+    <p>&copy; 2025 Mr. Priyan Motors – Batticaloa. All Rights Reserved.</p>
+    <p class="text-xs mt-1 opacity-80">Admin: Click Account → Admin Login to edit</p>
+</footer>
+
+<a href="https://wa.me/94753503111" class="fixed bottom-5 right-5 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-2xl z-50 hover:bg-green-600 transition"><i class="fab fa-whatsapp"></i></a>
 
 <!-- Modals -->
 <div id="loginModal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay p-4">
@@ -89,16 +121,89 @@
     </div>
 </div>
 
+<div id="settingsModal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md p-6">
+        <h3 class="text-xl font-bold mb-4">Settings</h3>
+        <div class="space-y-3">
+            <p class="text-gray-600">• <i class="fas fa-motorcycle"></i> Manage bikes from Bikes page</p>
+            <p class="text-gray-600">• <i class="fas fa-check-circle"></i> Manage sold entries from Sold page</p>
+            <p class="text-gray-600">• <i class="fas fa-image"></i> Click on logo to update it quickly</p>
+            <p class="text-gray-600">• <i class="fas fa-key"></i> Change password from Account menu</p>
+            <p class="text-gray-600">• <i class="fas fa-user-edit"></i> Change username from Account menu</p>
+        </div>
+        <button id="closeSettingsModalBtn" class="w-full mt-4 bg-gray-300 py-2 rounded-lg">Close</button>
+    </div>
+</div>
+
+<div id="changePasswordModal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md p-6">
+        <h3 class="text-xl font-bold mb-4">Change Password</h3>
+        <input type="password" id="currentPassword" placeholder="Current Password" class="w-full border p-3 rounded-lg mb-3">
+        <input type="password" id="newPassword" placeholder="New Password" class="w-full border p-3 rounded-lg mb-3">
+        <input type="password" id="confirmPassword" placeholder="Confirm New Password" class="w-full border p-3 rounded-lg mb-4">
+        <div id="pwdError" class="text-red-500 text-sm mb-2 hidden"></div>
+        <button id="savePasswordBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">Update Password</button>
+        <button id="closePasswordModalBtn" class="w-full mt-2 text-gray-500 py-2">Cancel</button>
+    </div>
+</div>
+
+<div id="changeUsernameModal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md p-6">
+        <h3 class="text-xl font-bold mb-4">Change Username</h3>
+        <input type="text" id="newUsername" placeholder="New Username" class="w-full border p-3 rounded-lg mb-4">
+        <div id="usernameError" class="text-red-500 text-sm mb-2 hidden"></div>
+        <button id="saveUsernameBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">Update Username</button>
+        <button id="closeUsernameModalBtn" class="w-full mt-2 text-gray-500 py-2">Cancel</button>
+    </div>
+</div>
+
 <div id="editBikeModal" class="fixed inset-0 z-[300] hidden items-center justify-center modal-overlay p-4">
-    <div class="bg-white rounded-2xl w-full max-w-lg mx-auto p-5"><h3 id="modalTitle" class="text-xl font-bold mb-4">Edit Bike</h3><input type="hidden" id="editBikeId"><input type="text" id="bikeName" placeholder="Bike Name" class="w-full border p-3 rounded-lg mb-3"><input type="text" id="bikePrice" placeholder="Price (Rs.)" class="w-full border p-3 rounded-lg mb-3"><input type="text" id="bikeYear" placeholder="Year" class="w-full border p-3 rounded-lg mb-3"><input type="text" id="bikeKm" placeholder="Kilometers" class="w-full border p-3 rounded-lg mb-3"><input type="text" id="bikeLocation" placeholder="Location" class="w-full border p-3 rounded-lg mb-3"><input type="text" id="bikeBrand" placeholder="Brand" class="w-full border p-3 rounded-lg mb-3"><input type="file" id="bikeImageUpload" accept="image/*" class="w-full border p-2 rounded-lg mb-3"><img id="bikeImagePreview" src="" class="w-20 h-20 object-cover rounded-lg mb-2 hidden"><input type="text" id="bikeImageUrl" placeholder="Or paste image URL" class="w-full border p-2 rounded-lg mb-3"><div class="flex justify-end gap-3"><button id="closeModalBtn" class="px-5 py-2 bg-gray-300 rounded-lg">Cancel</button><button id="saveBikeBtn" class="px-5 py-2 bg-blue-600 text-white rounded-lg">Save</button></div></div>
+    <div class="bg-white rounded-2xl w-full max-w-lg mx-auto p-5 max-h-[90vh] overflow-y-auto">
+        <h3 id="modalTitle" class="text-xl font-bold mb-4">Edit Bike</h3>
+        <input type="hidden" id="editBikeId">
+        <input type="text" id="bikeName" placeholder="Bike Name *" class="w-full border p-3 rounded-lg mb-3">
+        <input type="text" id="bikePrice" placeholder="Price (Rs.) *" class="w-full border p-3 rounded-lg mb-3">
+        <input type="text" id="bikeYear" placeholder="Year *" class="w-full border p-3 rounded-lg mb-3">
+        <input type="text" id="bikeKm" placeholder="Kilometers *" class="w-full border p-3 rounded-lg mb-3">
+        <input type="text" id="bikeLocation" placeholder="Location *" class="w-full border p-3 rounded-lg mb-3">
+        <input type="text" id="bikeBrand" placeholder="Brand *" class="w-full border p-3 rounded-lg mb-3">
+        <input type="file" id="bikeImageUpload" accept="image/*" class="w-full border p-2 rounded-lg mb-3">
+        <img id="bikeImagePreview" src="" class="w-20 h-20 object-cover rounded-lg mb-2 hidden">
+        <input type="text" id="bikeImageUrl" placeholder="Or paste image URL" class="w-full border p-2 rounded-lg mb-3">
+        <div class="flex justify-end gap-3">
+            <button id="closeModalBtn" class="px-5 py-2 bg-gray-300 rounded-lg">Cancel</button>
+            <button id="saveBikeBtn" class="px-5 py-2 bg-blue-600 text-white rounded-lg">Save</button>
+        </div>
+    </div>
 </div>
 
 <div id="editSoldModal" class="fixed inset-0 z-[300] hidden items-center justify-center modal-overlay p-4">
-    <div class="bg-white rounded-2xl w-full max-w-lg mx-auto p-5"><h3 id="soldModalTitle" class="text-xl font-bold mb-4">Sold Bike Details</h3><input type="hidden" id="editSoldId"><input type="text" id="soldName" placeholder="Bike Name" class="w-full border p-3 rounded-lg mb-3"><input type="text" id="soldPrice" placeholder="Sold Price (Rs.)" class="w-full border p-3 rounded-lg mb-3"><input type="text" id="soldMonthYear" placeholder="Month Year e.g., Mar 2025" class="w-full border p-3 rounded-lg mb-3"><input type="text" id="soldBuyer" placeholder="Buyer Name" class="w-full border p-3 rounded-lg mb-3"><input type="file" id="soldImageUpload" accept="image/*" class="w-full border p-2 rounded-lg mb-3"><img id="soldImagePreview" src="" class="w-20 h-20 object-cover rounded-lg mb-2 hidden"><input type="text" id="soldImageUrl" placeholder="Or paste image URL" class="w-full border p-2 rounded-lg mb-3"><div class="flex justify-end gap-3"><button id="closeSoldModalBtn" class="px-5 py-2 bg-gray-300 rounded-lg">Cancel</button><button id="saveSoldBtn" class="px-5 py-2 bg-blue-600 text-white rounded-lg">Save</button></div></div>
+    <div class="bg-white rounded-2xl w-full max-w-lg mx-auto p-5 max-h-[90vh] overflow-y-auto">
+        <h3 id="soldModalTitle" class="text-xl font-bold mb-4">Sold Bike Details</h3>
+        <input type="hidden" id="editSoldId">
+        <input type="text" id="soldName" placeholder="Bike Name *" class="w-full border p-3 rounded-lg mb-3">
+        <input type="text" id="soldPrice" placeholder="Sold Price (Rs.) *" class="w-full border p-3 rounded-lg mb-3">
+        <input type="text" id="soldMonthYear" placeholder="Month Year (e.g., Mar 2025) *" class="w-full border p-3 rounded-lg mb-3">
+        <input type="text" id="soldBuyer" placeholder="Buyer Name *" class="w-full border p-3 rounded-lg mb-3">
+        <input type="file" id="soldImageUpload" accept="image/*" class="w-full border p-2 rounded-lg mb-3">
+        <img id="soldImagePreview" src="" class="w-20 h-20 object-cover rounded-lg mb-2 hidden">
+        <input type="text" id="soldImageUrl" placeholder="Or paste image URL" class="w-full border p-2 rounded-lg mb-3">
+        <div class="flex justify-end gap-3">
+            <button id="closeSoldModalBtn" class="px-5 py-2 bg-gray-300 rounded-lg">Cancel</button>
+            <button id="saveSoldBtn" class="px-5 py-2 bg-blue-600 text-white rounded-lg">Save</button>
+        </div>
+    </div>
 </div>
 
 <div id="editLogoModal" class="fixed inset-0 z-[200] hidden items-center justify-center modal-overlay p-4">
-    <div class="bg-white rounded-2xl w-full max-w-md p-6"><h3 class="text-xl font-bold mb-4">Update Website Logo</h3><div class="text-center mb-4"><img id="logoPreview" src="" class="w-28 h-28 rounded-full object-cover mx-auto border-4 border-gray-200"></div><input type="file" id="logoUploadInput" accept="image/*" class="w-full border p-2 rounded-lg mb-3"><input type="text" id="logoUrlInput" placeholder="Or paste image URL" class="w-full border p-3 rounded-lg mb-3"><button id="saveLogoBtn" class="w-full bg-purple-600 text-white py-3 rounded-lg font-bold">Update Logo</button><button id="closeLogoModalBtn" class="w-full mt-2 text-gray-500 py-2">Cancel</button></div>
+    <div class="bg-white rounded-2xl w-full max-w-md p-6">
+        <h3 class="text-xl font-bold mb-4">Update Website Logo</h3>
+        <div class="text-center mb-4"><img id="logoPreview" src="" class="w-28 h-28 rounded-full object-cover mx-auto border-4 border-gray-200"></div>
+        <input type="file" id="logoUploadInput" accept="image/*" class="w-full border p-2 rounded-lg mb-3">
+        <input type="text" id="logoUrlInput" placeholder="Or paste image URL" class="w-full border p-3 rounded-lg mb-3">
+        <button id="saveLogoBtn" class="w-full bg-purple-600 text-white py-3 rounded-lg font-bold">Update Logo</button>
+        <button id="closeLogoModalBtn" class="w-full mt-2 text-gray-500 py-2">Cancel</button>
+    </div>
 </div>
 
 <script src="app.js"></script>
