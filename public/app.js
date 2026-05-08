@@ -1,4 +1,4 @@
-// app.js - Complete Working Version
+// app.js - Complete Working Version with ALL Features
 const API_URL = '';
 let token = localStorage.getItem('token');
 let currentUser = null;
@@ -11,7 +11,7 @@ function showToast(message, isError = false) {
     const toast = document.createElement('div');
     toast.className = `toast ${isError ? 'bg-red-500' : 'bg-green-500'}`;
     toast.textContent = message;
-    toast.style.cssText = 'position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: white; padding: 12px 24px; border-radius: 50px; z-index: 1000; animation: fadeInOut 3s ease; z-index: 9999;';
+    toast.style.cssText = 'position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); color: white; padding: 12px 24px; border-radius: 50px; z-index: 10000; animation: fadeInOut 3s ease;';
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
@@ -27,7 +27,7 @@ function escapeHtml(str) {
 }
 
 function closeAllModals() {
-    const modals = ['loginModal', 'editBikeModal', 'editSoldModal', 'editLogoModal'];
+    const modals = ['loginModal', 'settingsModal', 'changePasswordModal', 'changeUsernameModal', 'editBikeModal', 'editSoldModal', 'editLogoModal'];
     modals.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -69,7 +69,7 @@ const templates = {
                 <span class="inline-block bg-blue-600/80 px-4 py-1 rounded-full text-sm font-bold mb-4">#RideTheExtraordinary</span>
                 <h1 class="text-4xl md:text-7xl font-black mb-4">Own Your <span class="text-blue-400">Dream Machine</span></h1>
                 <p class="text-base md:text-2xl text-gray-200 max-w-3xl mx-auto mb-6">Premium new & used motorcycles | Main Street, Kiran, Batticaloa</p>
-                <div class="flex justify-center gap-4"><button onclick="window.navigateTo('bikes')" class="bg-blue-600 px-6 py-3 rounded-xl font-bold cursor-pointer">Explore Bikes</button><button onclick="window.navigateTo('exchange')" class="bg-transparent border-2 border-white px-6 py-3 rounded-xl font-bold cursor-pointer">Sell Your Bike</button></div>
+                <div class="flex justify-center gap-4"><button onclick="window.navigateTo('bikes')" class="bg-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition">Explore Bikes</button><button onclick="window.navigateTo('exchange')" class="bg-transparent border-2 border-white px-6 py-3 rounded-xl font-bold hover:bg-green-600 transition">Sell Your Bike</button></div>
                 <div class="grid grid-cols-3 gap-4 mt-10 max-w-3xl mx-auto"><div class="bg-white/10 rounded-2xl p-3"><div class="text-2xl font-black text-blue-400">500+</div><div class="text-xs">Bikes Sold</div></div><div class="bg-white/10 rounded-2xl p-3"><div class="text-2xl font-black text-blue-400">100%</div><div class="text-xs">Trust</div></div><div class="bg-white/10 rounded-2xl p-3"><div class="text-2xl font-black text-blue-400">24/7</div><div class="text-xs">Support</div></div></div>
             </div>
         </header>
@@ -86,7 +86,7 @@ const templates = {
     
     sold: () => `
         <div class="container mx-auto px-4 py-8">
-            <div class="flex justify-between items-center mb-6 flex-wrap gap-3"><div><h1 class="text-3xl md:text-4xl font-black">✅ Recently Sold Bikes</h1><p class="text-gray-500">Sold archive with buyer details and photos</p></div>${token ? `<button onclick="window.openAddSoldModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold transition"><i class="fas fa-plus"></i> Add Sold Entry</button>` : ''}</div>
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-3"><div><h1 class="text-3xl md:text-4xl font-black">✅ Recently Sold Bikes</h1><p class="text-gray-500">Sold archive with buyer details</p></div>${token ? `<button onclick="window.openAddSoldModal()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl font-bold transition"><i class="fas fa-plus"></i> Add Sold Entry</button>` : ''}</div>
             <div id="soldGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </div>
     `,
@@ -189,12 +189,10 @@ function renderSold() {
         return;
     }
     grid.innerHTML = soldList.map(s => `
-        <div class="bg-white rounded-2xl overflow-hidden shadow-md sold-card border hover:shadow-lg transition">
-            <img src="${s.image || 'https://placehold.co/600x400/22C55E/white?text=Sold'}" class="sold-img w-full h-48 object-cover" onerror="this.src='https://placehold.co/600x400/22C55E/white?text=Sold'">
-            <div class="p-4"><h3 class="text-xl font-bold">${escapeHtml(s.name)}</h3><p class="font-bold text-green-700 text-lg">${s.sold_price}</p>
+        <div class="bg-white rounded-2xl overflow-hidden shadow-md sold-card border-l-8 border-green-500 hover:shadow-lg transition p-4">
+            <h3 class="text-xl font-bold">${escapeHtml(s.name)}</h3><p class="font-bold text-green-700 text-lg">${s.sold_price}</p>
             <p class="text-sm text-gray-600 mt-1"><i class="far fa-calendar-alt"></i> ${s.month_year} · Buyer: ${escapeHtml(s.buyer)}</p>
             ${token ? `<div class="flex gap-3 mt-4"><button onclick="window.editSold(${s.id})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-xs transition"><i class="fas fa-edit"></i> Edit</button><button onclick="window.deleteSold(${s.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs transition"><i class="fas fa-trash"></i> Delete</button></div>` : `<div class="mt-3 text-gray-500 text-xs"><i class="fas fa-check-circle text-green-500"></i> Sold by Mr. Priyan Motors</div>`}
-            </div>
         </div>
     `).join('');
 }
@@ -217,7 +215,7 @@ window.editBike = (id) => {
 };
 
 window.deleteBike = async (id) => {
-    if (!confirm('Delete this bike?')) return;
+    if (!confirm('Are you sure you want to delete this bike?')) return;
     const response = await apiCall(`/api/bikes/${id}`, { method: 'DELETE' });
     if (response && response.ok) {
         showToast('Bike deleted successfully');
@@ -240,10 +238,10 @@ window.editSold = (id) => {
 };
 
 window.deleteSold = async (id) => {
-    if (!confirm('Remove this sold record?')) return;
+    if (!confirm('Are you sure you want to remove this sold record?')) return;
     const response = await apiCall(`/api/sold/${id}`, { method: 'DELETE' });
     if (response && response.ok) {
-        showToast('Sold entry removed');
+        showToast('Sold entry removed successfully');
         loadSold();
     }
 };
@@ -312,9 +310,12 @@ document.getElementById('saveBikeBtn')?.addEventListener('click', async () => {
     
     const response = await apiCall(url, { method, body: formData });
     if (response && response.ok) {
-        showToast(id ? 'Bike updated!' : 'Bike added!');
+        showToast(id ? 'Bike updated successfully!' : 'Bike added successfully!');
         closeAllModals();
         loadBikes();
+    } else if (response) {
+        const error = await response.json();
+        showToast(error.error || 'Failed to save bike', true);
     }
 });
 
@@ -352,10 +353,100 @@ document.getElementById('saveSoldBtn')?.addEventListener('click', async () => {
         showToast(id ? 'Sold entry updated!' : 'Sold entry added!');
         closeAllModals();
         loadSold();
+    } else if (response) {
+        const error = await response.json();
+        showToast(error.error || 'Failed to save sold entry', true);
     }
 });
 
-// ============= AUTHENTICATION =============
+// ============= SETTINGS & AUTHENTICATION =============
+document.getElementById('settingsMenuItem')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!token) {
+        showToast('Please login first to access settings', true);
+        return;
+    }
+    document.getElementById('settingsModal').classList.remove('hidden');
+});
+
+document.getElementById('changePasswordMenuItem')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!token) {
+        showToast('Please login first', true);
+        return;
+    }
+    document.getElementById('changePasswordModal').classList.remove('hidden');
+});
+
+document.getElementById('changeUsernameMenuItem')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!token) {
+        showToast('Please login first', true);
+        return;
+    }
+    document.getElementById('changeUsernameModal').classList.remove('hidden');
+});
+
+document.getElementById('savePasswordBtn')?.addEventListener('click', async () => {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (newPassword !== confirmPassword) {
+        document.getElementById('pwdError').innerText = 'New passwords do not match';
+        return;
+    }
+    if (newPassword.length < 4) {
+        document.getElementById('pwdError').innerText = 'Password must be at least 4 characters';
+        return;
+    }
+    
+    const response = await apiCall('/api/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ currentPassword, newPassword })
+    });
+    if (response && response.ok) {
+        showToast('Password changed successfully! Please login again.');
+        closeAllModals();
+        logout();
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+        document.getElementById('pwdError').innerText = '';
+    } else {
+        const error = await response.json();
+        document.getElementById('pwdError').innerText = error.error || 'Failed to change password';
+    }
+});
+
+document.getElementById('saveUsernameBtn')?.addEventListener('click', async () => {
+    const newUsername = document.getElementById('newUsername').value;
+    if (!newUsername) {
+        document.getElementById('usernameError').innerText = 'Username cannot be empty';
+        return;
+    }
+    
+    const response = await apiCall('/api/change-username', {
+        method: 'POST',
+        body: JSON.stringify({ newUsername })
+    });
+    if (response && response.ok) {
+        const data = await response.json();
+        token = data.token;
+        localStorage.setItem('token', token);
+        showToast('Username changed successfully!');
+        closeAllModals();
+        document.getElementById('newUsername').value = '';
+        document.getElementById('usernameError').innerText = '';
+        // Refresh user display
+        if (currentUser) currentUser.username = newUsername;
+        document.getElementById('dropdownUserName').innerHTML = `${newUsername} (Admin)`;
+    } else {
+        const error = await response.json();
+        document.getElementById('usernameError').innerText = error.error || 'Username already exists';
+    }
+});
+
 async function checkAuth() {
     if (!token) return false;
     const response = await apiCall('/api/verify-token');
@@ -365,7 +456,7 @@ async function checkAuth() {
             currentUser = await userResponse.json();
         }
         document.getElementById('userStatusText').innerHTML = 'Admin';
-        document.getElementById('dropdownUserName').innerHTML = 'Admin (Edit Mode)';
+        document.getElementById('dropdownUserName').innerHTML = `${currentUser?.username || 'Admin'} (Admin)`;
         document.getElementById('dropdownUserRole').innerHTML = '● Edit Mode';
         document.getElementById('logoutBtn').classList.remove('hidden');
         document.getElementById('showLoginOption').classList.add('hidden');
@@ -382,9 +473,17 @@ async function login(username, password) {
     if (response && response.ok) {
         const data = await response.json();
         token = data.token;
+        currentUser = data.user;
         localStorage.setItem('token', token);
+        
+        // Get full user info
+        const userResponse = await apiCall('/api/me');
+        if (userResponse && userResponse.ok) {
+            currentUser = await userResponse.json();
+        }
+        
         document.getElementById('userStatusText').innerHTML = 'Admin';
-        document.getElementById('dropdownUserName').innerHTML = 'Admin (Edit Mode)';
+        document.getElementById('dropdownUserName').innerHTML = `${currentUser?.username || 'Admin'} (Admin)`;
         document.getElementById('dropdownUserRole').innerHTML = '● Edit Mode';
         document.getElementById('logoutBtn').classList.remove('hidden');
         document.getElementById('showLoginOption').classList.add('hidden');
@@ -401,13 +500,14 @@ async function login(username, password) {
 
 function logout() {
     token = null;
+    currentUser = null;
     localStorage.removeItem('token');
     document.getElementById('userStatusText').innerHTML = 'Guest';
     document.getElementById('dropdownUserName').innerHTML = 'Guest User';
     document.getElementById('dropdownUserRole').innerHTML = 'View Only Mode';
     document.getElementById('logoutBtn').classList.add('hidden');
     document.getElementById('showLoginOption').classList.remove('hidden');
-    showToast('Logged out');
+    showToast('Logged out successfully');
     if (currentPage === 'bikes') loadBikes();
     if (currentPage === 'sold') loadSold();
 }
@@ -451,12 +551,16 @@ document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(link => {
     });
 });
 
+// Close modal buttons
 document.getElementById('closeModalBtn')?.addEventListener('click', closeAllModals);
 document.getElementById('closeSoldModalBtn')?.addEventListener('click', closeAllModals);
 document.getElementById('closeLogoModalBtn')?.addEventListener('click', closeAllModals);
 document.getElementById('closeLoginModalBtn')?.addEventListener('click', closeAllModals);
+document.getElementById('closeSettingsModalBtn')?.addEventListener('click', closeAllModals);
+document.getElementById('closePasswordModalBtn')?.addEventListener('click', closeAllModals);
+document.getElementById('closeUsernameModalBtn')?.addEventListener('click', closeAllModals);
 
-// Image preview handlers
+// Image preview
 document.getElementById('bikeImageUpload')?.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -464,6 +568,7 @@ document.getElementById('bikeImageUpload')?.addEventListener('change', (e) => {
         reader.onload = (ev) => {
             document.getElementById('bikeImagePreview').src = ev.target.result;
             document.getElementById('bikeImagePreview').classList.remove('hidden');
+            document.getElementById('bikeImageUrl').value = '';
         };
         reader.readAsDataURL(file);
     }
@@ -476,6 +581,7 @@ document.getElementById('soldImageUpload')?.addEventListener('change', (e) => {
         reader.onload = (ev) => {
             document.getElementById('soldImagePreview').src = ev.target.result;
             document.getElementById('soldImagePreview').classList.remove('hidden');
+            document.getElementById('soldImageUrl').value = '';
         };
         reader.readAsDataURL(file);
     }
@@ -521,8 +627,20 @@ document.getElementById('saveLogoBtn')?.addEventListener('click', async () => {
     if (response && response.ok) {
         const data = await response.json();
         document.getElementById('siteLogo').src = data.logoUrl;
-        showToast('Logo updated!');
+        showToast('Logo updated successfully!');
         closeAllModals();
+    }
+});
+
+document.getElementById('logoUploadInput')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            document.getElementById('logoPreview').src = ev.target.result;
+            document.getElementById('logoUrlInput').value = ev.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 });
 
