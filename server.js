@@ -1,4 +1,4 @@
-// server.js - Complete Working Backend with Fixed Delete
+// server.js - Complete Working Backend with Profile Pictures
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -41,6 +41,7 @@ mongoose.connect(MONGODB_URI)
 const userSchema = new mongoose.Schema({
   username: { type: String, unique: true, required: true },
   password: { type: String, required: true },
+  profile_picture: { type: String, default: '' },
   created_at: { type: Date, default: Date.now }
 });
 
@@ -110,7 +111,7 @@ async function initializeData() {
     const adminExists = await User.findOne({ username: 'admin' });
     if (!adminExists) {
       const hashedPassword = bcrypt.hashSync('admin123', 10);
-      await User.create({ username: 'admin', password: hashedPassword });
+      await User.create({ username: 'admin', password: hashedPassword, profile_picture: '' });
       console.log('✅ Admin user created');
     }
     
@@ -119,7 +120,6 @@ async function initializeData() {
       await Setting.create({ key: 'website_logo', value: 'https://placehold.co/400x400/1E3A8A/white?text=PM' });
     }
     
-    // Add social media settings
     const whatsappSetting = await Setting.findOne({ key: 'whatsapp_group' });
     if (!whatsappSetting) {
       await Setting.create({ key: 'whatsapp_group', value: 'https://chat.whatsapp.com/yourinvitecode' });
@@ -169,7 +169,14 @@ app.post('/api/login', async (req, res) => {
     }
     
     const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, user: { id: user._id, username: user.username } });
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        username: user.username,
+        profile_picture: user.profile_picture || ''
+      } 
+    });
   } catch (err) {
     res.status(500).json({ error: 'Database error' });
   }
@@ -206,9 +213,29 @@ app.post('/api/change-username', authenticateToken, async (req, res) => {
   }
 });
 
+// Profile Picture Upload - FIXED
+app.post('/api/upload-profile-picture', authenticateToken, upload.single('image'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+  
+  try {
+    const imageData = bufferToBase64(req.file.buffer, req.file.mimetype);
+    await User.findByIdAndUpdate(req.user._id, { profile_picture: imageData });
+    res.json({ imageUrl: imageData });
+  } catch (err) {
+    console.error('Profile picture upload error:', err);
+    res.status(500).json({ error: 'Failed to upload profile picture' });
+  }
+});
+
 app.get('/api/me', authenticateToken, async (req, res) => {
   const user = await User.findById(req.user._id).select('-password');
-  res.json(user);
+  res.json({
+    id: user._id,
+    username: user.username,
+    profile_picture: user.profile_picture || ''
+  });
 });
 
 app.get('/api/verify-token', authenticateToken, (req, res) => {
@@ -231,7 +258,7 @@ app.post('/api/bikes', authenticateToken, upload.single('image'), async (req, re
     
     if (req.file) {
       bikeData.image = bufferToBase64(req.file.buffer, req.file.mimetype);
-    } else if (req.body.image_url) {
+    } else if (req.body.image_url && req.body.image_url !== '') {
       bikeData.image = req.body.image_url;
     }
     
@@ -253,7 +280,7 @@ app.put('/api/bikes/:id', authenticateToken, upload.single('image'), async (req,
     
     if (req.file) {
       updateData.image = bufferToBase64(req.file.buffer, req.file.mimetype);
-    } else if (req.body.image_url) {
+    } else if (req.body.image_url && req.body.image_url !== '') {
       updateData.image = req.body.image_url;
     }
     
@@ -267,25 +294,12 @@ app.put('/api/bikes/:id', authenticateToken, upload.single('image'), async (req,
 app.delete('/api/bikes/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('Deleting bike with ID:', id);
-    
-    if (!id || id === 'undefined') {
+    if (!id || id === 'undefined' || !mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: 'Invalid bike ID' });
     }
-    
-    // Check if ID is valid MongoDB ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ error: 'Invalid bike ID format' });
-    }
-    
-    const deleted = await Bike.findByIdAndDelete(id);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Bike not found' });
-    }
-    
+    await Bike.findByIdAndDelete(id);
     res.json({ message: 'Bike deleted successfully' });
   } catch (err) {
-    console.error('Delete error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -306,7 +320,7 @@ app.post('/api/sold', authenticateToken, upload.single('image'), async (req, res
     
     if (req.file) {
       soldData.image = bufferToBase64(req.file.buffer, req.file.mimetype);
-    } else if (req.body.image_url) {
+    } else if (req.body.image_url && req.body.image_url !== '') {
       soldData.image = req.body.image_url;
     }
     
@@ -328,7 +342,7 @@ app.put('/api/sold/:id', authenticateToken, upload.single('image'), async (req, 
     
     if (req.file) {
       updateData.image = bufferToBase64(req.file.buffer, req.file.mimetype);
-    } else if (req.body.image_url) {
+    } else if (req.body.image_url && req.body.image_url !== '') {
       updateData.image = req.body.image_url;
     }
     
@@ -342,24 +356,12 @@ app.put('/api/sold/:id', authenticateToken, upload.single('image'), async (req, 
 app.delete('/api/sold/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('Deleting sold entry with ID:', id);
-    
-    if (!id || id === 'undefined') {
+    if (!id || id === 'undefined' || !mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: 'Invalid sold entry ID' });
     }
-    
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ error: 'Invalid ID format' });
-    }
-    
-    const deleted = await Sold.findByIdAndDelete(id);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Sold entry not found' });
-    }
-    
+    await Sold.findByIdAndDelete(id);
     res.json({ message: 'Sold entry deleted successfully' });
   } catch (err) {
-    console.error('Delete error:', err);
     res.status(500).json({ error: err.message });
   }
 });
